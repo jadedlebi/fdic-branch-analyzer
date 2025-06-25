@@ -1,0 +1,42 @@
+# GitHub Pages Configuration
+title: FDIC Branch Analyzer
+description: AI-powered banking market intelligence platform
+author: NCRC - National Community Reinvestment Coalition
+url: https://jadedlebi.github.io
+baseurl: /fdic-branch-analyzer
+
+# Build settings
+theme: jekyll-theme-cayman
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# SEO
+lang: en_US
+timezone: America/New_York
+
+# Social media
+twitter:
+  username: ncrc
+  card: summary_large_image
+
+# Analytics (optional)
+google_analytics: G-XXXXXXXXXX
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# Include only necessary files
+include:
+  - _pages
+  - assets
+  - css
+  - js
+  - index.html 

@@ -70,6 +70,19 @@ def select_county_interactively(user_county: str) -> str:
             print("Invalid selection. Please enter a valid number.")
 
 
+def select_county_automatically(user_county: str) -> str:
+    """Automatically select the best county match without user interaction."""
+    matches = find_exact_county_match(user_county)
+    if not matches:
+        raise ValueError(f"No counties found matching '{user_county}'. Please check the spelling.")
+    elif len(matches) == 1:
+        return matches[0]
+    else:
+        # For web interface, return the first match and log the ambiguity
+        print(f"Warning: Multiple counties found for '{user_county}', using first match: {matches[0]}")
+        return matches[0]
+
+
 def get_user_parameters():
     print("Enter counties (semicolon-separated, e.g. 'Queens County, New York; Cook County, Illinois'):")
     counties_input = input("> ").strip()
@@ -82,6 +95,18 @@ def get_user_parameters():
     else:
         years = [int(y.strip()) for y in years_input.split(",") if y.strip().isdigit()]
 
+    return counties, years
+
+
+def parse_web_parameters(counties_str: str, years_str: str) -> tuple:
+    """Parse parameters from web interface."""
+    counties = [c.strip() for c in counties_str.split(";") if c.strip()]
+    
+    if years_str.lower() == "all":
+        years = list(range(2017, 2025))
+    else:
+        years = [int(y.strip()) for y in years_str.split(",") if y.strip().isdigit()]
+    
     return counties, years
 
 
@@ -105,6 +130,69 @@ def prepare_data_for_pdf(raw_data: pd.DataFrame) -> pd.DataFrame:
     raw_data['mmct_pct'] = raw_data['mmct_pct'].fillna(0)
     
     return raw_data
+
+
+def run_analysis(counties_str: str, years_str: str) -> Dict:
+    """Run analysis for web interface. Returns a dictionary with success/error status."""
+    try:
+        # Parse parameters
+        counties, years = parse_web_parameters(counties_str, years_str)
+        
+        if not counties:
+            return {'success': False, 'error': 'No counties provided'}
+        
+        if not years:
+            return {'success': False, 'error': 'No years provided'}
+        
+        # Clarify county selections automatically
+        clarified_counties = []
+        for county in counties:
+            try:
+                clarified_county = select_county_automatically(county)
+                clarified_counties.append(clarified_county)
+            except ValueError as e:
+                return {'success': False, 'error': str(e)}
+        
+        # Execute BigQuery queries
+        sql_template = load_sql_template()
+        all_results = []
+        
+        for county in clarified_counties:
+            for year in years:
+                try:
+                    results = execute_query(sql_template, county, year)
+                    all_results.extend(results)
+                except Exception as e:
+                    print(f"Error querying {county} {year}: {e}")
+                    continue
+        
+        if not all_results:
+            return {'success': False, 'error': 'No data found for the specified parameters'}
+        
+        # Build and save report
+        report_data = build_report(all_results, clarified_counties, years)
+        
+        # Save Excel report with standard filename
+        excel_path = os.path.join(OUTPUT_DIR, 'fdic_branch_analysis.xlsx')
+        save_excel_report(report_data, excel_path)
+        
+        # Prepare data for PDF generation
+        pdf_data = prepare_data_for_pdf(report_data['raw_data'])
+        
+        # Generate PDF report
+        pdf_path = os.path.join(OUTPUT_DIR, 'fdic_branch_analysis.pdf')
+        generate_pdf_report_from_data(pdf_data, clarified_counties, years, pdf_path)
+        
+        return {
+            'success': True,
+            'message': f'Analysis completed successfully. Generated reports for {len(clarified_counties)} counties and {len(years)} years.',
+            'counties': clarified_counties,
+            'years': years,
+            'records': len(all_results)
+        }
+        
+    except Exception as e:
+        return {'success': False, 'error': f'Analysis failed: {str(e)}'}
 
 
 def main():

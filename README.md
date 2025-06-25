@@ -1,277 +1,167 @@
-# AI-Assisted FDIC Bank Branch Analysis System
+# FDIC Branch Analyzer
 
-A comprehensive, AI-powered system for analyzing FDIC bank branch data using BigQuery and generating professional Excel and PDF reports with AI insights.
+AI-powered banking market intelligence platform for analyzing FDIC branch data with comprehensive insights and professional reporting.
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PyPI version](https://badge.fury.io/py/fdic-branch-analyzer.svg)](https://badge.fury.io/py/fdic-branch-analyzer)
+## 🌟 Live Demo
+
+**Visit the live application:** [https://jadedlebi.github.io/fdic-branch-analyzer/](https://jadedlebi.github.io/fdic-branch-analyzer/)
 
 ## 🚀 Quick Start
 
-### Install & Run in 3 Steps
+1. **Enter Counties**: 
+   - Single county: `Cook County, Illinois`
+   - Multiple counties: `Cook County, Illinois; Los Angeles County, California`
 
-```bash
-# 1. Install (choose your platform)
-curl -sSL https://raw.githubusercontent.com/yourusername/fdic-branch-analyzer/main/install.sh | bash
-# OR download and run install.bat (Windows)
+2. **Enter Years**:
+   - Specific years: `2020,2021,2022`
+   - All years: `all` (2017-2024)
 
-# 2. Configure credentials
-cp config_template.txt .env
-# Edit .env with your BigQuery and AI API credentials
+3. **Generate Analysis**: Click "Generate Analysis" and wait for processing
 
-# 3. Run analysis
-fdic-analyzer
-```
+4. **Download Reports**: Get a ZIP file containing Excel and PDF reports
 
-**That's it!** Follow the prompts to analyze any county's bank branch data.
+## 📊 What You'll Get
 
-## 📊 What You Get
+### Excel Report
+- Raw branch data with detailed statistics
+- Market share calculations
+- Year-over-year comparisons
+- Bank rankings and analysis
 
-- **📈 Market Analysis**: Bank concentration, market share trends
-- **🏘️ Community Impact**: LMI and minority tract coverage analysis  
-- **🤖 AI Insights**: Executive summaries and strategic recommendations
-- **📋 Professional Reports**: Excel data tables + PDF narratives
-- **📅 Multi-Year Trends**: 2017-2024 analysis capabilities
+### PDF Report
+- Executive summary with key findings
+- AI-generated insights and analysis
+- Professional charts and tables
+- Strategic recommendations
+- Market dynamics overview
 
 ## 🏗️ Project Structure
 
 ```
-branch_ai/
-├── main.py                          # Entry point
-├── setup.py                         # Package configuration
-├── install.sh                       # Unix installation script
-├── install.bat                      # Windows installation script
-├── config_template.txt              # Credentials template
-├── QUICKSTART.md                    # Quick start guide
-├── src/                            # Source code
-│   ├── core/                       # Core application logic
-│   ├── utils/                      # Utility modules
-│   ├── analysis/                   # AI analysis modules
-│   └── reporting/                  # Report generation modules
-├── config/                         # Configuration files
-├── data/                          # Data directories
-├── docs/                          # Documentation and templates
-├── tests/                         # Test files
-└── scripts/                       # Utility scripts
+fdic-branch-analyzer/
+├── web/                    # GitHub Pages static site
+│   ├── index.html         # Main interface
+│   ├── css/style.css      # Styling
+│   ├── js/app.js          # Frontend logic
+│   └── _config.yml        # GitHub Pages config
+├── src/                   # Core application
+│   ├── core/main.py       # Main orchestration
+│   ├── utils/             # Utilities
+│   ├── analysis/          # AI analysis
+│   └── reporting/         # Report generation
+├── config/                # Configuration
+├── docs/                  # Documentation
+│   ├── README.md          # User guide
+│   ├── API.md             # API documentation
+│   └── DEPLOYMENT.md      # Deployment guide
+├── scripts/               # Automation scripts
+│   └── deploy/            # Deployment scripts
+└── data/                  # Data storage (gitignored)
 ```
 
-## 🛠️ Installation Options
+## 🛠️ Technical Stack
 
-### Option 1: Automated Installation (Recommended)
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
+- **Backend**: Python 3.8+, Flask
+- **Data Source**: FDIC Summary of Deposits (SOD) via BigQuery
+- **AI Engine**: Claude 3.5 Sonnet for intelligent analysis
+- **Analysis Engine**: pandas, matplotlib, reportlab
+- **Deployment**: GitHub Pages, Docker, Cloud platforms
 
-**macOS/Linux:**
+## 🔧 Development Setup
+
+### Prerequisites
+- Python 3.8+
+- BigQuery access
+- Claude API key
+
+### Installation
 ```bash
-curl -sSL https://raw.githubusercontent.com/yourusername/fdic-branch-analyzer/main/install.sh | bash
-```
-
-**Windows:**
-```cmd
-# Download and run install.bat
-```
-
-### Option 2: Manual Installation
-
-```bash
-# Clone and setup
-git clone https://github.com/yourusername/fdic-branch-analyzer.git
+git clone https://github.com/jadedlebi/fdic-branch-analyzer.git
 cd fdic-branch-analyzer
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate.bat
 pip install -r requirements.txt
-pip install -e .
 ```
 
-### Option 3: PyPI Installation (Coming Soon)
+### Environment Setup
+Create a `.env` file with:
+```env
+# BigQuery Credentials
+BQ_TYPE=service_account
+BQ_PROJECT_ID=your-project-id
+BQ_PRIVATE_KEY=your-private-key
+BQ_CLIENT_EMAIL=your-client-email
 
+# AI API Keys
+CLAUDE_API_KEY=your-claude-key
+OPENAI_API_KEY=your-openai-key
+```
+
+### Running Locally
 ```bash
-pip install fdic-branch-analyzer
+python run_web.py
 ```
+Then visit `http://127.0.0.1:5050`
 
-## 🔐 Setup Credentials
+## 🚀 Deployment
 
-1. **Copy the template:**
-   ```bash
-   cp config_template.txt .env
-   ```
-
-2. **Add your credentials to `.env`:**
-   ```bash
-   # BigQuery (from Google Cloud Console)
-   BQ_PROJECT_ID=your-project-id
-   BQ_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
-   BQ_CLIENT_EMAIL=your-service@your-project.iam.gserviceaccount.com
-   
-   # AI Provider (choose one)
-   CLAUDE_API_KEY=sk-ant-api03-...  # Recommended
-   # OPENAI_API_KEY=sk-...          # Alternative
-   ```
-
-## 🎯 Usage Examples
-
-### Single County Analysis
+### GitHub Pages (Recommended)
 ```bash
-fdic-analyzer
-# Enter: montgomery county, maryland
-# Enter: 2020,2021,2022
+./scripts/deploy/deploy.sh
 ```
 
-### Multi-County Analysis
+### Docker
 ```bash
-fdic-analyzer
-# Enter: montgomery county, maryland; cook county, illinois
-# Enter: all
+docker build -t fdic-analyzer .
+docker run -p 5000:5000 fdic-analyzer
 ```
 
-### Specific Year Range
-```bash
-fdic-analyzer
-# Enter: queens county, new york
-# Enter: 2018,2019,2020,2021
-```
+### Cloud Platforms
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment guides.
 
-## 📋 Prerequisites
+## 🔒 Security
 
-- **Python 3.9+**
-- **BigQuery access** (Google Cloud account)
-- **AI API key** (Claude or OpenAI)
+- All credentials are stored in environment variables
+- No sensitive data is committed to the repository
+- BigQuery access is restricted to authorized users
+- API keys are encrypted and secure
 
-## 🤖 AI Providers
+## 📚 Documentation
 
-### Claude (Recommended)
-- **Model**: Claude 3.5 Sonnet
-- **Features**: Comprehensive analysis, detailed insights
-- **Setup**: Get API key from [console.anthropic.com](https://console.anthropic.com)
-
-### GPT-4 (Alternative)
-- **Model**: GPT-4
-- **Features**: Alternative AI analysis
-- **Setup**: Get API key from [platform.openai.com](https://platform.openai.com)
-
-## 📁 Directory Details
-
-### `src/` - Source Code
-- **`core/`**: Main application logic and workflow orchestration
-- **`utils/`**: BigQuery utilities, county matching, and helper functions
-- **`analysis/`**: AI analysis modules and GPT/Claude integration
-- **`reporting/`**: Excel and PDF report generation
-
-### `config/` - Configuration
-- **`config.py`**: Central configuration file with all settings
-- Paths, AI models, BigQuery settings, and report configuration
-
-### `data/` - Data Management
-- **`raw/`**: Original data files and samples
-- **`processed/`**: Intermediate processed data
-- **`reports/`**: Generated Excel and PDF reports
-
-### `docs/` - Documentation
-- **`prompts/`**: AI prompt templates
-- **`query_templates/`**: SQL query templates
-- **`*.md`**: Comprehensive documentation
-
-## 🧪 Testing
-
-```bash
-# Quick tests
-make test-quick
-
-# Full test suite
-make test
-
-# Run demo
-make demo
-```
-
-## 🔧 Development
-
-```bash
-# Setup development environment
-make setup-dev
-
-# Run all checks
-make check
-
-# Build package
-make build
-```
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**"BigQuery credentials not found"**
-- Check your `.env` file exists and has correct values
-- Verify your service account has BigQuery access
-
-**"AI API key not found"**
-- Add your API key to `.env`
-- Check your API key is valid and has credits
-
-**"Python not found"**
-- Install Python 3.9+ from [python.org](https://python.org)
-- Ensure Python is in your PATH
-
-### Getting Help
-
-- **Quick Start**: [QUICKSTART.md](QUICKSTART.md)
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/fdic-branch-analyzer/issues)
-- **Setup Guide**: [docs/CLAUDE_SETUP.md](docs/CLAUDE_SETUP.md)
-
-## 📈 Features
-
-### Core Functionality
-- **Dynamic Input**: Interactive prompts for counties and years
-- **Multi-County Analysis**: Support for multiple counties in a single report
-- **Year Range Analysis**: Flexible year selection (2017-2024)
-- **County Clarification**: Smart county name matching and disambiguation
-
-### Data Analysis
-- **BigQuery Integration**: Direct querying of FDIC Summary of Deposits data
-- **Market Share Analysis**: Bank concentration and market share calculations
-- **Community Impact**: LMI and MMCT tract analysis
-- **Trend Analysis**: Year-over-year growth and decline patterns
-
-### AI-Powered Insights
-- **Executive Summary**: AI-generated executive overview
-- **Key Findings**: Automated identification of important trends
-- **Strategic Analysis**: Bank strategy and community impact insights
-- **Conclusions**: AI-powered strategic implications
-
-### Report Generation
-- **Excel Reports**: Comprehensive data tables and analysis
-- **PDF Reports**: Professional, formatted reports with AI insights
-- **Modern Formatting**: Clean, readable presentation with proper sections
-- **Multiple Formats**: Both statistical and narrative analysis
+- **[User Guide](docs/README.md)** - How to use the application
+- **[API Documentation](docs/API.md)** - For developers and integrations
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment instructions
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Follow the established directory structure
-4. Add tests for new functionality
-5. Update documentation as needed
-6. Submit a pull request
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is developed by NCRC (National Community Reinvestment Coalition) for banking market analysis and research purposes.
 
-## ⚠️ Disclaimer
+## 👥 Authors
 
-This tool is for educational and research purposes. Please ensure compliance with:
-- FDIC data usage policies
-- API terms of service
-- Local data protection regulations
+- **Jad Edlebi** - NCRC
+- **Jason Richardson** - NCRC
 
-## 🎉 Support
+## 🔗 Links
 
-If you find this tool helpful, please:
-- ⭐ Star the repository
-- 🐛 Report issues
-- 💡 Suggest improvements
-- 📖 Share with colleagues
+- [Live Application](https://jadedlebi.github.io/fdic-branch-analyzer/)
+- [GitHub Repository](https://github.com/jadedlebi/fdic-branch-analyzer)
+- [NCRC Website](https://ncrc.org)
+- [Issues & Support](https://github.com/jadedlebi/fdic-branch-analyzer/issues)
+
+## 📞 Support
+
+For questions or support:
+- Create an issue on GitHub
+- Contact the NCRC team
+- Check the documentation in the `docs/` folder
 
 ---
 
-**Happy analyzing! 📊** 
+**Built with ❤️ by NCRC for better banking market intelligence** 
