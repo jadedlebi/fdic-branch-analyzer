@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fdic-branch-analyzer"
+version = "1.0.0"
+description = "AI-powered FDIC bank branch data analysis and reporting tool. Developed at National Community Reinvestment Coalition (NCRC), 740 15th Street NW, Washington, DC 20005."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Jad Edlebi", email = "jedlebi@ncrc.org"},
+    {name = "Jason Richardson", email = "jrichardson@ncrc.org"}
+]
+maintainers = [
+    {name = "Jad Edlebi", email = "jedlebi@ncrc.org"},
+    {name = "Jason Richardson", email = "jrichardson@ncrc.org"}
+]
+keywords = ["fdic", "banking", "analysis", "bigquery", "ai", "claude", "gpt"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "pandas>=1.5.0",
+    "google-cloud-bigquery>=3.0.0",
+    "openpyxl>=3.0.0",
+    "reportlab>=3.6.0",
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
+    "anthropic>=0.7.0",
+    "openai>=1.0.0",
+    "python-dotenv>=0.19.0",
+    "numpy>=1.21.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+    "flake8>=5.0.0",
+    "twine>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/fdic-branch-analyzer"
+Documentation = "https://github.com/yourusername/fdic-branch-analyzer/blob/main/README.md"
+Repository = "https://github.com/yourusername/fdic-branch-analyzer"
+"Bug Tracker" = "https://github.com/yourusername/fdic-branch-analyzer/issues"
+
+[project.scripts]
+fdic-analyzer = "src.core.main:main"
+branch-analyzer = "src.core.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.md", "*.txt", "*.sql"] 

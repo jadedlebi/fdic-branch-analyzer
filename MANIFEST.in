@@ -1,0 +1,10 @@
+include README.md
+include QUICKSTART.md
+include requirements.txt
+include config_template.txt
+include install.sh
+include install.bat
+include .gitignore
+recursive-include docs *.md *.txt *.sql
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co] 
