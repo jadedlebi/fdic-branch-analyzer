@@ -4,7 +4,7 @@ AI-powered banking market intelligence platform for analyzing FDIC branch data w
 
 ## 🌟 Live Demo
 
-**Visit the live application:** [https://jadedlebi.github.io/fdic-branch-analyzer/](https://jadedlebi.github.io/fdic-branch-analyzer/)
+**Visit the live application [here](https://fdic-analyzer-892833260112.us-east1.run.app/):**
 
 ## 🚀 Quick Start
 
