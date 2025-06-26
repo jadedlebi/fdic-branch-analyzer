@@ -18,4 +18,5 @@ if __name__ == '__main__':
         os.environ['SECRET_KEY'] = 'fdic-branch-analyzer-secret-key-2024'
     
     # Run the Flask app on a different port and only on localhost
-    app.run(debug=True, host='127.0.0.1', port=5050) 
+    port = int(os.environ.get('PORT', 8080))
+    app.run(debug=False, host='0.0.0.0', port=port) 

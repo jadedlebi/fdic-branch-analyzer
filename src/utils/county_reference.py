@@ -4,7 +4,7 @@ County reference and matching utilities for FDIC bank branch reports.
 Provides exact county names from the database and improved matching logic.
 """
 
-from bq_utils import get_available_counties
+from src.utils.bq_utils import get_available_counties
 from typing import List, Optional
 
 def get_all_counties() -> List[str]:

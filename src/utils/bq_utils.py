@@ -16,9 +16,15 @@ import pandas as pd
 def get_bigquery_client():
     """Get BigQuery client using environment-based credentials."""
     try:
-        credentials_dict = get_bq_credentials()
-        credentials = service_account.Credentials.from_service_account_info(credentials_dict)
-        client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
+        if os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+            # Local: use key file
+            credentials = service_account.Credentials.from_service_account_file(
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+            )
+            client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
+        else:
+            # Cloud Run: use default service account
+            client = bigquery.Client(project=PROJECT_ID)
         return client
     except Exception as e:
         print(f"Error creating BigQuery client: {e}")
@@ -55,7 +61,6 @@ def find_exact_county_match(county_input: str) -> list:
             WHERE LOWER(county_state) LIKE LOWER('%{county_name}%')
             AND LOWER(county_state) LIKE LOWER('%{state}%')
             ORDER BY county_state
-            LIMIT 20
             """
         else:
             county_query = f"""
@@ -63,7 +68,6 @@ def find_exact_county_match(county_input: str) -> list:
             FROM geo.cbsa_to_county 
             WHERE LOWER(county_state) LIKE LOWER('%{county_name}%')
             ORDER BY county_state
-            LIMIT 20
             """
         county_job = client.query(county_query)
         county_results = list(county_job.result())
@@ -133,18 +137,20 @@ def test_connection() -> bool:
 def get_available_counties() -> List[str]:
     """Get list of available counties from the database."""
     try:
+        print("Getting BigQuery client...")
         client = get_bigquery_client()
+        print("Client obtained:", client)
         query = """
         SELECT DISTINCT county_state 
         FROM geo.cbsa_to_county 
         ORDER BY county_state
         """
+        print("Running query:", query)
         query_job = client.query(query)
         results = query_job.result()
-        
         counties = [row.county_state for row in results]
+        print("Counties fetched:", counties)
         return counties
-        
     except Exception as e:
         print(f"Error getting available counties: {e}")
         return []
