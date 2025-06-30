@@ -196,25 +196,22 @@ class AIAnalyzer:
         {json.dumps(market_shares_json, indent=2)}
 
         Provide an executive summary that:
-        1. Summarizes the key trends in branch counts over the period
+        1. Summarizes the key trends in branch counts over the period using simplified percentage formatting (#.#%)
         2. Highlights the market concentration among major banks
-        3. Identifies the most significant changes and their implications
-        4. Mentions key strategic insights for stakeholders
-        5. Is written in a professional, executive-level tone
-        6. Is concise but comprehensive (2-3 paragraphs maximum)
-
-        Write in a professional, executive summary style that would be suitable for senior management or board members.
+        3. Notes any significant changes in MMCT percentages, especially around 2022 (when 2020 census data became effective)
+        4. Keeps the summary concise and professional (2-3 paragraphs maximum)
+        
+        Format percentages as #.#% (e.g., "24.3%" not "24.31%")
         """
         
-        return self._call_ai(prompt, max_tokens=600, temperature=0.3)
+        return self._call_ai(prompt, max_tokens=800, temperature=0.3)
         
     def generate_key_findings(self, analysis_data: Dict[str, Any]) -> str:
-        """Generate key findings from the bank branch analysis."""
+        """Generate key findings from the analysis."""
         county = analysis_data['county']
         years = analysis_data['years']
         trends = analysis_data['trends']
         market_shares = analysis_data['market_shares']
-        bank_analysis = analysis_data['bank_analysis']
         
         if not trends or not market_shares:
             return ""
@@ -222,10 +219,9 @@ class AIAnalyzer:
         # Convert numpy types for JSON serialization
         trends_json = convert_numpy_types(trends)
         market_shares_json = convert_numpy_types(market_shares[:5])  # Top 5 banks only
-        bank_analysis_json = convert_numpy_types(bank_analysis)
             
         prompt = f"""
-        Generate key findings for the bank branch analysis of {county} from {years[0]} to {years[-1]} based on the following data:
+        Generate 3-5 key findings for the bank branch analysis of {county} from {years[0]} to {years[-1]} based on the following data:
 
         Trends Data:
         {json.dumps(trends_json, indent=2)}
@@ -233,25 +229,20 @@ class AIAnalyzer:
         Market Share Data:
         {json.dumps(market_shares_json, indent=2)}
 
-        Bank Growth Analysis:
-        {json.dumps(bank_analysis_json, indent=2)}
-
-        Provide 5-7 key findings that:
-        1. Highlight the most important trends and patterns
-        2. Identify significant market concentration issues
-        3. Point out notable bank performance differences
-        4. Emphasize community impact implications
-        5. Suggest strategic implications for the banking sector
-        6. Are written as bullet points or numbered findings
-        7. Use specific data points and percentages where relevant
-
-        Format as a list of key findings, each 1-2 sentences long, focusing on the most impactful insights.
+        Key findings should:
+        1. Highlight the most significant trends and patterns
+        2. Use simplified percentage formatting (#.#%)
+        3. Note any notable changes in MMCT percentages around 2022 (2020 census effect)
+        4. Be presented as bullet points
+        5. Focus on actionable insights and strategic implications
+        
+        Format each finding as a bullet point starting with "•"
         """
         
-        return self._call_ai(prompt, max_tokens=800, temperature=0.3)
+        return self._call_ai(prompt, max_tokens=600, temperature=0.3)
         
     def analyze_overall_trends(self, analysis_data: Dict[str, Any]) -> str:
-        """Generate AI analysis of overall branch trends."""
+        """Analyze overall branch trends with enhanced context."""
         county = analysis_data['county']
         years = analysis_data['years']
         trends = analysis_data['trends']
@@ -263,42 +254,40 @@ class AIAnalyzer:
         trends_json = convert_numpy_types(trends)
             
         prompt = f"""
-        Analyze the overall bank branch trends for {county} from {years[0]} to {years[-1]} based on the following data:
+        Analyze the overall branch trends for {county} from {years[0]} to {years[-1]} based on the following data:
 
+        Trends Data:
         {json.dumps(trends_json, indent=2)}
 
-        Provide a comprehensive analysis that includes:
-        1. Total branch count changes and percentage changes over the period
-        2. Year-over-year patterns (steady decline, fluctuations, recovery, etc.)
-        3. Analysis of LMI (Low-to-Moderate Income) tract distribution trends
-        4. Analysis of Majority-Minority tract distribution trends
-        5. Analysis of tracts that are both LMI and Majority-Minority
-        6. Industry context and potential explanations for trends
-        7. Comparison of different metrics and their correlations
-        8. Implications for financial inclusion and community access
-
-        Write in a professional, analytical tone similar to a research report. Focus on insights and explanations, not just data recitation. 
-        Format as 2-3 cohesive paragraphs that flow naturally and provide deep analytical insights.
+        Provide analysis that:
+        1. Explains the overall branch count trends using simplified percentage formatting (#.#%)
+        2. Highlights year-over-year changes and cumulative effects
+        3. Notes any significant changes in MMCT percentages, especially around 2022 when 2020 census data became effective
+        4. Compares trends to broader state/national patterns where relevant
+        5. Explains the three distinct categories: LMICT (Low-to-Moderate Income), MMCT (Majority-Minority), and LMI/MMCT (both)
+        6. Uses clear, professional language suitable for business audiences
+        
+        Keep the analysis to 2-3 paragraphs maximum.
         """
         
-        return self._call_ai(prompt, max_tokens=1200, temperature=0.3)
+        return self._call_ai(prompt, max_tokens=800, temperature=0.3)
 
     def analyze_bank_strategies(self, analysis_data: Dict[str, Any]) -> str:
-        """Generate AI analysis of bank strategies and market concentration."""
+        """Analyze bank strategies and market concentration."""
         county = analysis_data['county']
         years = analysis_data['years']
         market_shares = analysis_data['market_shares']
-        bank_analysis = analysis_data['bank_analysis']
+        bank_analysis = analysis_data.get('bank_analysis', [])
         
-        if not market_shares or not bank_analysis:
+        if not market_shares:
             return ""
             
         # Convert numpy types for JSON serialization
-        market_shares_json = convert_numpy_types(market_shares)
+        market_shares_json = convert_numpy_types(market_shares[:10])  # Top 10 banks
         bank_analysis_json = convert_numpy_types(bank_analysis)
             
         prompt = f"""
-        Analyze the bank strategies and market concentration for {county} from {years[0]} to {years[-1]} based on the following data:
+        Analyze the banking strategies and market concentration in {county} from {years[0]} to {years[-1]} based on the following data:
 
         Market Share Data:
         {json.dumps(market_shares_json, indent=2)}
@@ -306,80 +295,70 @@ class AIAnalyzer:
         Bank Growth Analysis:
         {json.dumps(bank_analysis_json, indent=2)}
 
-        Provide a comprehensive analysis that includes:
-        1. Market concentration analysis (how many banks control what percentage of branches)
-        2. Individual bank performance and strategy insights
-        3. Growth/decline patterns and potential explanations
-        4. Comparison of different banks' approaches and market positioning
-        5. Industry consolidation trends and their impact on competition
-        6. Strategic implications for the banking landscape
-        7. Analysis of market power and potential antitrust considerations
-        8. Implications for consumer choice and service quality
-
-        Write in a professional, analytical tone. Focus on strategic insights and explanations for why banks made certain decisions.
-        Format as 2-3 cohesive paragraphs that provide deep strategic analysis.
+        Provide analysis that:
+        1. Explains the market concentration among major banks using simplified percentage formatting (#.#%)
+        2. Analyzes growth patterns and strategic implications
+        3. Compares bank performance in serving LMICT, MMCT, and LMI/MMCT communities
+        4. Notes any significant changes in MMCT percentages around 2022 (2020 census effect)
+        5. Provides insights into competitive dynamics and market structure
+        
+        Keep the analysis to 2-3 paragraphs maximum.
         """
         
-        return self._call_ai(prompt, max_tokens=1200, temperature=0.3)
+        return self._call_ai(prompt, max_tokens=800, temperature=0.3)
 
     def analyze_community_impact(self, analysis_data: Dict[str, Any]) -> str:
-        """Generate AI analysis of community impact and branch distribution."""
+        """Analyze community impact and branch distribution."""
         county = analysis_data['county']
         years = analysis_data['years']
         market_shares = analysis_data['market_shares']
-        comparisons = analysis_data['comparisons']
+        comparisons = analysis_data.get('comparisons', {})
         
-        if not market_shares or not comparisons:
+        if not market_shares:
             return ""
             
         # Convert numpy types for JSON serialization
-        market_shares_json = convert_numpy_types(market_shares)
+        market_shares_json = convert_numpy_types(market_shares[:10])  # Top 10 banks
         comparisons_json = convert_numpy_types(comparisons)
             
         prompt = f"""
-        Analyze the community impact and branch distribution patterns for {county} from {years[0]} to {years[-1]} based on the following data:
+        Analyze the community impact and branch distribution in {county} from {years[0]} to {years[-1]} based on the following data:
 
-        Market Share Data (including LMI and MMCT percentages):
+        Market Share Data:
         {json.dumps(market_shares_json, indent=2)}
 
-        County Average Comparisons:
+        County Comparisons:
         {json.dumps(comparisons_json, indent=2)}
 
-        Provide a comprehensive analysis that includes:
-        1. How different banks serve LMI (Low-to-Moderate Income) communities
-        2. How different banks serve Majority-Minority communities
-        3. Which banks are more focused on underserved areas vs. affluent areas
-        4. Community access implications of branch distribution patterns
-        5. Fair lending and community reinvestment implications
-        6. Recommendations for improving financial inclusion
-        7. Analysis of geographic equity in branch distribution
-        8. Impact on economic development and community stability
-        9. Comparison of bank performance against community needs
-        10. Strategic recommendations for policymakers and regulators
-
-        Write in a professional, analytical tone. Focus on community impact and access to financial services.
-        Format as 2-3 cohesive paragraphs that provide comprehensive community impact analysis.
+        Provide analysis that:
+        1. Explains how banks serve different community types using simplified percentage formatting (#.#%)
+        2. Compares bank performance to county averages
+        3. Explains the three distinct categories: LMICT, MMCT, and LMI/MMCT
+        4. Notes the 2020 census impact on MMCT designations (effective 2022)
+        5. Provides insights into community banking access and equity
+        6. Compares to broader state/national trends where relevant
+        
+        Keep the analysis to 2-3 paragraphs maximum.
         """
         
-        return self._call_ai(prompt, max_tokens=1200, temperature=0.3)
+        return self._call_ai(prompt, max_tokens=800, temperature=0.3)
 
     def generate_conclusion(self, analysis_data: Dict[str, Any]) -> str:
-        """Generate AI-powered conclusion synthesizing all findings."""
+        """Generate a conclusion with strategic implications."""
         county = analysis_data['county']
         years = analysis_data['years']
         trends = analysis_data['trends']
         market_shares = analysis_data['market_shares']
-        bank_analysis = analysis_data['bank_analysis']
-        comparisons = analysis_data['comparisons']
         
+        if not trends or not market_shares:
+            return ""
+            
         # Convert numpy types for JSON serialization
         trends_json = convert_numpy_types(trends)
-        market_shares_json = convert_numpy_types(market_shares)
-        bank_analysis_json = convert_numpy_types(bank_analysis)
-        comparisons_json = convert_numpy_types(comparisons)
-        
+        market_shares_json = convert_numpy_types(market_shares[:5])  # Top 5 banks
+            
         prompt = f"""
-        Generate a comprehensive conclusion for the bank branch analysis of {county} from {years[0]} to {years[-1]} based on all the data:
+        Generate a conclusion for the bank branch analysis of {county} from {years[0]} to {years[-1]} based on the following data:
 
         Trends Data:
         {json.dumps(trends_json, indent=2)}
@@ -387,29 +366,18 @@ class AIAnalyzer:
         Market Share Data:
         {json.dumps(market_shares_json, indent=2)}
 
-        Bank Analysis:
-        {json.dumps(bank_analysis_json, indent=2)}
-
-        Comparisons:
-        {json.dumps(comparisons_json, indent=2)}
-
         Provide a conclusion that:
-        1. Summarizes the key findings about branch trends and market concentration
-        2. Explains the implications for the banking industry and competition
-        3. Discusses the impact on community access to financial services
-        4. Identifies patterns in bank strategies and their effectiveness
-        5. Suggests what these trends mean for the future of banking
-        6. Provides insights about financial inclusion and community development
-        7. Offers strategic recommendations for stakeholders
-        8. Addresses potential policy implications
-        9. Considers the balance between efficiency and accessibility
-        10. Outlines next steps for monitoring and improvement
-
-        Write in a professional, analytical tone. This should be a comprehensive conclusion that ties together all the analysis.
-        Format as 2-3 cohesive paragraphs that provide strategic insights and forward-looking recommendations.
+        1. Summarizes the key strategic implications using simplified percentage formatting (#.#%)
+        2. Addresses the three distinct community categories (LMICT, MMCT, LMI/MMCT)
+        3. Notes the 2020 census impact on MMCT data
+        4. Provides forward-looking insights and recommendations
+        5. Compares to broader market trends where relevant
+        6. Maintains a professional, business-oriented tone
+        
+        Keep the conclusion to 2-3 paragraphs maximum.
         """
         
-        return self._call_ai(prompt, max_tokens=1000, temperature=0.3)
+        return self._call_ai(prompt, max_tokens=800, temperature=0.3)
 
 
 # Legacy class name for backward compatibility

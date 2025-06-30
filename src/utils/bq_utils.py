@@ -149,11 +149,11 @@ def get_available_counties() -> List[str]:
         query_job = client.query(query)
         results = query_job.result()
         counties = [row.county_state for row in results]
-        print("Counties fetched:", counties)
+        print("Counties fetched:", len(counties))
         return counties
     except Exception as e:
         print(f"Error getting available counties: {e}")
-        return []
+        raise  # Re-raise the exception so fallback logic can catch it
 
 def get_available_years() -> List[int]:
     """Get list of available years from the database."""
