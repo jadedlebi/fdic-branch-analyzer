@@ -5,9 +5,9 @@ Test script for AI-powered analysis functionality.
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'src'))
 
-from gpt_utils import GPTAnalyzer
+from analysis.gpt_utils import AIAnalyzer
 import json
 
 def test_ai_analysis():
@@ -15,7 +15,7 @@ def test_ai_analysis():
     print("🧪 Testing AI Analysis Functionality...")
     
     # Initialize the AI analyzer
-    analyzer = GPTAnalyzer()
+    analyzer = AIAnalyzer()
     
     # Sample data for testing
     sample_data = {

@@ -195,13 +195,14 @@ class AIAnalyzer:
         Market Share Data:
         {json.dumps(market_shares_json, indent=2)}
 
-        Provide an executive summary that:
-        1. Summarizes the key trends in branch counts over the period using simplified percentage formatting (#.#%)
-        2. Highlights the market concentration among major banks
-        3. Notes any significant changes in MMCT percentages, especially around 2022 (when 2020 census data became effective)
-        4. Keeps the summary concise and professional (2-3 paragraphs maximum)
+        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
+        1. Summarizing key trends in branch counts using simplified percentage formatting (#.#%)
+        2. Highlighting market concentration among major banks
+        3. Noting significant changes in MMCT percentages around 2022 (2020 census data effect)
+        4. Keeping the summary concise and professional (2-3 paragraphs maximum)
         
         Format percentages as #.#% (e.g., "24.3%" not "24.31%")
+        Return only plain text narrative.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
@@ -229,14 +230,14 @@ class AIAnalyzer:
         Market Share Data:
         {json.dumps(market_shares_json, indent=2)}
 
-        Key findings should:
-        1. Highlight the most significant trends and patterns
-        2. Use simplified percentage formatting (#.#%)
-        3. Note any notable changes in MMCT percentages around 2022 (2020 census effect)
-        4. Be presented as bullet points
-        5. Focus on actionable insights and strategic implications
+        IMPORTANT: Generate ONLY narrative text as bullet points. Do not create tables, charts, or any formatting. Focus on:
+        1. Highlighting the most significant trends and patterns
+        2. Using simplified percentage formatting (#.#%)
+        3. Noting any notable changes in MMCT percentages around 2022 (2020 census effect)
+        4. Focusing on actionable insights and strategic implications
         
         Format each finding as a bullet point starting with "•"
+        Return only plain text narrative with bullet points.
         """
         
         return self._call_ai(prompt, max_tokens=600, temperature=0.3)
@@ -259,15 +260,16 @@ class AIAnalyzer:
         Trends Data:
         {json.dumps(trends_json, indent=2)}
 
-        Provide analysis that:
-        1. Explains the overall branch count trends using simplified percentage formatting (#.#%)
-        2. Highlights year-over-year changes and cumulative effects
-        3. Notes any significant changes in MMCT percentages, especially around 2022 when 2020 census data became effective
-        4. Compares trends to broader state/national patterns where relevant
-        5. Explains the three distinct categories: LMICT (Low-to-Moderate Income), MMCT (Majority-Minority), and LMI/MMCT (both)
-        6. Uses clear, professional language suitable for business audiences
+        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
+        1. Explaining the overall branch count trends using simplified percentage formatting (#.#%)
+        2. Highlighting year-over-year changes and cumulative effects
+        3. Noting any significant changes in MMCT percentages around 2022 (2020 census data effect)
+        4. Comparing trends to broader state/national patterns where relevant
+        5. Explaining the three distinct categories: LMICT (Low-to-Moderate Income), MMCT (Majority-Minority), and LMI/MMCT (both)
+        6. Using clear, professional language suitable for business audiences
         
         Keep the analysis to 2-3 paragraphs maximum.
+        Return only plain text narrative.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
@@ -295,14 +297,15 @@ class AIAnalyzer:
         Bank Growth Analysis:
         {json.dumps(bank_analysis_json, indent=2)}
 
-        Provide analysis that:
-        1. Explains the market concentration among major banks using simplified percentage formatting (#.#%)
-        2. Analyzes growth patterns and strategic implications
-        3. Compares bank performance in serving LMICT, MMCT, and LMI/MMCT communities
-        4. Notes any significant changes in MMCT percentages around 2022 (2020 census effect)
-        5. Provides insights into competitive dynamics and market structure
+        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
+        1. Explaining the market concentration among major banks using simplified percentage formatting (#.#%)
+        2. Analyzing growth patterns and strategic implications
+        3. Comparing bank performance in serving LMICT, MMCT, and LMI/MMCT communities
+        4. Noting any significant changes in MMCT percentages around 2022 (2020 census effect)
+        5. Providing insights into competitive dynamics and market structure
         
         Keep the analysis to 2-3 paragraphs maximum.
+        Return only plain text narrative.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
@@ -330,15 +333,16 @@ class AIAnalyzer:
         County Comparisons:
         {json.dumps(comparisons_json, indent=2)}
 
-        Provide analysis that:
-        1. Explains how banks serve different community types using simplified percentage formatting (#.#%)
-        2. Compares bank performance to county averages
-        3. Explains the three distinct categories: LMICT, MMCT, and LMI/MMCT
-        4. Notes the 2020 census impact on MMCT designations (effective 2022)
-        5. Provides insights into community banking access and equity
-        6. Compares to broader state/national trends where relevant
+        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
+        1. Explaining how banks serve different community types using simplified percentage formatting (#.#%)
+        2. Comparing bank performance to county averages
+        3. Explaining the three distinct categories: LMICT, MMCT, and LMI/MMCT
+        4. Noting the 2020 census impact on MMCT designations (effective 2022)
+        5. Providing insights into community banking access and equity
+        6. Comparing to broader state/national trends where relevant
         
         Keep the analysis to 2-3 paragraphs maximum.
+        Return only plain text narrative.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
@@ -366,15 +370,16 @@ class AIAnalyzer:
         Market Share Data:
         {json.dumps(market_shares_json, indent=2)}
 
-        Provide a conclusion that:
-        1. Summarizes the key strategic implications using simplified percentage formatting (#.#%)
-        2. Addresses the three distinct community categories (LMICT, MMCT, LMI/MMCT)
-        3. Notes the 2020 census impact on MMCT data
-        4. Provides forward-looking insights and recommendations
-        5. Compares to broader market trends where relevant
-        6. Maintains a professional, business-oriented tone
+        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
+        1. Summarizing the key strategic implications using simplified percentage formatting (#.#%)
+        2. Addressing the three distinct community categories (LMICT, MMCT, LMI/MMCT)
+        3. Noting the 2020 census impact on MMCT data
+        4. Providing forward-looking insights and recommendations
+        5. Comparing to broader market trends where relevant
+        6. Maintaining a professional, business-oriented tone
         
         Keep the conclusion to 2-3 paragraphs maximum.
+        Return only plain text narrative.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
