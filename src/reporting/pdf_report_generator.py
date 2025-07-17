@@ -190,6 +190,25 @@ class EnhancedPDFReportGenerator:
             fontName='Helvetica',
             textColor=colors.HexColor('#4a5568')
         )
+        
+        # Summary box style for highlighted information
+        self.summary_box_style = ParagraphStyle(
+            'SummaryBox',
+            parent=self.styles['Normal'],
+            fontSize=11,
+            spaceAfter=8,
+            spaceBefore=8,
+            leading=15,
+            alignment=TA_JUSTIFY,
+            fontName='Helvetica',
+            textColor=colors.HexColor('#2d3748'),
+            leftIndent=10,
+            rightIndent=10,
+            backColor=colors.HexColor('#f7fafc'),
+            borderWidth=1,
+            borderColor=colors.HexColor('#e2e8f0'),
+            borderPadding=8
+        )
     
     def add_page_number(self, canvas, doc):
         """Add page numbers to the bottom center of each page."""
@@ -488,14 +507,21 @@ class EnhancedPDFReportGenerator:
                 formatted_content.append(Paragraph(f"<b>{section}</b>", self.subsection_style))
                 formatted_content.append(Spacer(1, 5))
                 
-            # Check if this contains bold keywords
+            # Check if this contains bold keywords - improved logic
             elif '**' in section or '*' in section:
-                # Handle bold keywords
-                # Replace **text** with <b>text</b>
-                formatted_section = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', section)
-                # Replace *text* with <b>text</b> (if not already handled)
-                formatted_section = re.sub(r'(?<!\*)\*([^*]+)\*(?!\*)', r'<b>\1</b>', formatted_section)
-                formatted_content.append(Paragraph(formatted_section, self.body_style))
+                # Handle bold keywords with improved logic
+                # First, check if the entire section is wrapped in ** (which we don't want)
+                if section.startswith('**') and section.endswith('**') and section.count('**') == 2:
+                    # Remove the outer ** and treat as normal paragraph
+                    section = section[2:-2].strip()
+                    formatted_content.append(Paragraph(section, self.body_style))
+                else:
+                    # Handle inline bold text properly
+                    # Replace **text** with <b>text</b> for inline bold
+                    formatted_section = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', section)
+                    # Replace *text* with <b>text</b> for single asterisk bold (if not already handled)
+                    formatted_section = re.sub(r'(?<!\*)\*([^*]+)\*(?!\*)', r'<b>\1</b>', formatted_section)
+                    formatted_content.append(Paragraph(formatted_section, self.body_style))
                 formatted_content.append(Spacer(1, 8))
                 
             else:
@@ -612,13 +638,15 @@ class EnhancedPDFReportGenerator:
                 story.append(Paragraph("Executive Summary", self.section_style))
                 if ai_analysis['executive_summary']:
                     story.extend(self.format_ai_content(ai_analysis['executive_summary']))
-                story.append(Spacer(1, 15))
+                story.append(Spacer(1, 20))
+                
                 # Key Findings Section
                 story.append(PageBreak())
                 story.append(Paragraph("Key Findings", self.section_style))
                 if ai_analysis['key_findings']:
                     story.extend(self.format_key_findings(ai_analysis['key_findings']))
-                story.append(Spacer(1, 15))
+                story.append(Spacer(1, 20))
+                
                 # Understanding the Data Section
                 story.append(PageBreak())
                 story.append(Paragraph("Understanding the Data", self.section_style))
@@ -635,13 +663,14 @@ class EnhancedPDFReportGenerator:
                     f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
                     self.body_style
                 ))
-                story.append(Spacer(1, 15))
+                story.append(Spacer(1, 20))
+                
                 # Overall Branch Trends Section
                 story.append(PageBreak())
                 story.append(Paragraph("Overall Branch Trends", self.section_style))
                 if ai_analysis['overall_trends']:
                     story.extend(self.format_ai_content(ai_analysis['overall_trends']))
-                    story.append(Spacer(1, 15))
+                    story.append(Spacer(1, 20))
                 if not county_trends.empty:
                     story.append(Paragraph("Detailed Branch Trends Data:", self.subsection_style))
                     trend_data = []
@@ -686,12 +715,17 @@ class EnhancedPDFReportGenerator:
                         total_top_branches = top_bank_data['total_branches'].sum()
                         total_county_branches = county_market_shares['total_branches'].sum()
                         top_percentage = (total_top_branches / total_county_branches * 100) if total_county_branches > 0 else 0
+                        
+                        # Create a more professional summary section
+                        story.append(Spacer(1, 10))
+                        story.append(Paragraph("Market Concentration Summary", self.subsection_style))
+                        story.append(Spacer(1, 5))
                         story.append(Paragraph(
-                            f"<b>Market Concentration Summary:</b> As of {max(self.years)}, {len(top_bank_data)} banks control "
+                            f"As of {max(self.years)}, {len(top_bank_data)} banks control "
                             f"{self.format_percentage(top_percentage)} of all branches in {county}, operating "
                             f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
                             f"This represents a {len(top_bank_data)}-bank oligopoly in the county's banking sector.",
-                            self.body_style
+                            self.summary_box_style
                         ))
                         story.append(Spacer(1, 15))
                         story.append(Paragraph("Top Banks Market Share Data:", self.subsection_style))
