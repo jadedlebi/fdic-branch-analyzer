@@ -254,7 +254,20 @@ $(document).ready(function() {
                 });
                 $countySelect.select2({
                     placeholder: "Select counties...",
-                    allowClear: true
+                    allowClear: true,
+                    matcher: function(params, data) {
+                        // If there is no search term, return all data
+                        if ($.trim(params.term) === '') {
+                            return data;
+                        }
+                        // Use the default matcher to get matches
+                        var matches = $.fn.select2.defaults.defaults.matcher(params, data);
+                        // If matches is an array, limit to 10
+                        if (matches && matches.children && matches.children.length > 10) {
+                            matches.children = matches.children.slice(0, 10);
+                        }
+                        return matches;
+                    }
                 });
             });
     }
