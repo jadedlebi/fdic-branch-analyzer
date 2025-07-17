@@ -223,7 +223,9 @@ class EnhancedPDFReportGenerator:
             # Calculate percentages
             yearly_stats['lmict_pct'] = (yearly_stats['lmict'] / yearly_stats['total_branches'] * 100).round(2)
             yearly_stats['mmct_pct'] = (yearly_stats['mmct'] / yearly_stats['total_branches'] * 100).round(2)
-            yearly_stats['both_pct'] = (yearly_stats['lmict'] * yearly_stats['mmct'] / yearly_stats['total_branches'] * 100).round(2)
+            # Calculate "Both %" as the minimum of LMI % and MMCT % (theoretical maximum overlap)
+            # Since we don't have actual intersection data, this represents the maximum possible overlap
+            yearly_stats['both_pct'] = np.minimum(yearly_stats['lmict_pct'], yearly_stats['mmct_pct']).round(2)
             
             # Calculate year-over-year changes
             yearly_stats['total_yoy_change'] = yearly_stats['total_branches'].pct_change() * 100
@@ -268,7 +270,9 @@ class EnhancedPDFReportGenerator:
             bank_stats['market_share'] = (bank_stats['total_branches'] / total_county_branches * 100).round(2)
             bank_stats['lmict_pct'] = (bank_stats['lmict'] / bank_stats['total_branches'] * 100).round(2)
             bank_stats['mmct_pct'] = (bank_stats['mmct'] / bank_stats['total_branches'] * 100).round(2)
-            bank_stats['both_pct'] = (bank_stats['lmict'] * bank_stats['mmct'] / bank_stats['total_branches'] * 100).round(2)
+            # Calculate "Both %" as the minimum of LMI % and MMCT % (theoretical maximum overlap)
+            # Since we don't have actual intersection data, this represents the maximum possible overlap
+            bank_stats['both_pct'] = np.minimum(bank_stats['lmict_pct'], bank_stats['mmct_pct']).round(2)
             
             # Sort by market share descending
             bank_stats = bank_stats.sort_values('market_share', ascending=False)
@@ -797,7 +801,8 @@ class EnhancedPDFReportGenerator:
                                 if not bank_current.empty:
                                     bank_lmi = bank_current.iloc[0]['lmict_pct']
                                     bank_mmct = bank_current.iloc[0]['mmct_pct']
-                                    bank_both = (bank_lmi * bank_mmct / 100) if bank_lmi > 0 and bank_mmct > 0 else 0
+                                    # Calculate "Both %" as the minimum of LMI % and MMCT % (theoretical maximum overlap)
+                                    bank_both = min(bank_lmi, bank_mmct) if bank_lmi > 0 and bank_mmct > 0 else 0
                                     
                                     # Determine comparison with indicators
                                     lmi_vs_avg = "▲" if bank_lmi > county_comparisons['county_avg_lmict'] else "▼" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
