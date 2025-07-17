@@ -11,7 +11,8 @@ from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 import seaborn as sns
 from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, 
+                                BaseDocTemplate, PageTemplate, Frame, KeepTogether)
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -177,6 +178,28 @@ class EnhancedPDFReportGenerator:
             fontName='Helvetica-Bold',
             textColor=colors.HexColor('#2d3748')
         )
+        
+        # Page number style
+        self.page_number_style = ParagraphStyle(
+            'PageNumber',
+            parent=self.styles['Normal'],
+            fontSize=10,
+            spaceAfter=0,
+            leading=12,
+            alignment=TA_CENTER,
+            fontName='Helvetica',
+            textColor=colors.HexColor('#4a5568')
+        )
+    
+    def add_page_number(self, canvas, doc):
+        """Add page numbers to the bottom center of each page."""
+        page_num = canvas.getPageNumber()
+        text = f"Page {page_num}"
+        canvas.saveState()
+        canvas.setFont('Helvetica', 10)
+        canvas.setFillColor(colors.HexColor('#4a5568'))
+        canvas.drawCentredString(doc.pagesize[0] / 2, 0.5 * inch, text)
+        canvas.restoreState()
     
     def format_number(self, num: float) -> str:
         """Format numbers as #,### with no decimals."""
@@ -388,11 +411,11 @@ class EnhancedPDFReportGenerator:
         """Generate enhanced AI-powered analysis using the configured AI provider for narrative insights only (no tables or formatting)."""
         # Prepare enhanced data for AI analysis
         analysis_data = {
-            'county': county_data['county'],
+            'county': county_data.get('county', 'Unknown County'),
             'years': self.years,
-            'trends': trends.to_dict('records') if not trends.empty else [],
-            'market_shares': market_shares.to_dict('records') if not market_shares.empty else [],
-            'bank_analysis': bank_analysis.to_dict('records') if not bank_analysis.empty else [],
+            'trends': trends.to_dict('records') if hasattr(trends, 'empty') and not trends.empty else [],
+            'market_shares': market_shares.to_dict('records') if hasattr(market_shares, 'empty') and not market_shares.empty else [],
+            'bank_analysis': bank_analysis.to_dict('records') if hasattr(bank_analysis, 'empty') and not bank_analysis.empty else [],
             'comparisons': comparisons
         }
         # Prompts are now explicit: only narrative, no tables or formatting
@@ -522,34 +545,44 @@ class EnhancedPDFReportGenerator:
     
     def generate_enhanced_pdf_report(self, output_path: str):
         """Generate the complete enhanced PDF report with comprehensive analysis. AI only provides narrative text; all tables and formatting are handled by Python."""
-        doc = SimpleDocTemplate(output_path, pagesize=letter, 
-                              topMargin=0.75*inch, bottomMargin=0.75*inch,
-                              leftMargin=0.75*inch, rightMargin=0.75*inch)
+        # Use BaseDocTemplate for better control over frames and page numbering
+        doc = BaseDocTemplate(
+            output_path,
+            pagesize=letter,
+            topMargin=0.75*inch,
+            bottomMargin=1.0*inch,  # Space for page numbers
+            leftMargin=0.75*inch,
+            rightMargin=0.75*inch
+        )
+        frame = Frame(
+            doc.leftMargin,
+            doc.bottomMargin,
+            doc.width,
+            doc.height - 0.3*inch,  # Reserve space for footer
+            id='normal'
+        )
+        template = PageTemplate(id='with-footer', frames=frame, onPage=self.add_page_number)
+        doc.addPageTemplates([template])
         story = []
         
         # Enhanced Cover Page
         counties_str = " and ".join(self.counties)
         years_str = f"{self.years[0]}–{self.years[-1]}"
-        
-        # Add NCRC logo with proper aspect ratio (wider to match original)
         logo_path = "./ncrc_logo.jpg"
         if os.path.exists(logo_path):
             from reportlab.platypus import Image
-            logo_img = Image(logo_path, width=2.8*inch, height=1*inch)  # Wider aspect ratio
+            logo_img = Image(logo_path, width=2.8*inch, height=1*inch)
             story.append(logo_img)
             story.append(Spacer(1, 20))
         else:
             story.append(Paragraph("[NCRC LOGO]", self.subtitle_style))
             story.append(Spacer(1, 20))
-        
-        story.append(Paragraph(f"{counties_str}\nBank Branch Trends\n({years_str})", self.title_style))
+        # Title with line breaks
+        title_text = f"{counties_str}<br/>Bank Branch Trends<br/>({years_str})"
+        story.append(Paragraph(title_text, self.title_style))
         story.append(Spacer(1, 40))
-        
-        # Add subtitle
         story.append(Paragraph("AI-Powered Banking Market Intelligence", self.subtitle_style))
         story.append(Spacer(1, 30))
-        
-        # Add report info (minimal)
         story.append(Paragraph(f"Report Generated: {datetime.now().strftime('%B %d, %Y')}", self.body_style))
         story.append(PageBreak())
         
@@ -567,7 +600,6 @@ class EnhancedPDFReportGenerator:
                 county_market_shares = market_shares[county]
                 county_bank_analysis = bank_analysis.get(county, pd.DataFrame())
                 county_comparisons = comparisons.get(county, {})
-                # Generate enhanced AI analysis (narrative only)
                 ai_analysis = self.generate_enhanced_ai_analysis(
                     {'county': county},
                     county_trends,
@@ -575,50 +607,45 @@ class EnhancedPDFReportGenerator:
                     county_bank_analysis,
                     county_comparisons
                 )
-                # Insert AI-generated narrative text only
+                # Executive Summary Section
+                story.append(PageBreak())
+                story.append(Paragraph("Executive Summary", self.section_style))
                 if ai_analysis['executive_summary']:
-                    story.append(Paragraph("Executive Summary", self.section_style))
                     story.extend(self.format_ai_content(ai_analysis['executive_summary']))
-                    story.append(Spacer(1, 15))
+                story.append(Spacer(1, 15))
+                # Key Findings Section
+                story.append(PageBreak())
+                story.append(Paragraph("Key Findings", self.section_style))
                 if ai_analysis['key_findings']:
-                    story.append(Paragraph("Key Findings", self.section_style))
                     story.extend(self.format_key_findings(ai_analysis['key_findings']))
-                    story.append(Spacer(1, 15))
-                
-                # MMCT Explanation
+                story.append(Spacer(1, 15))
+                # Understanding the Data Section
+                story.append(PageBreak())
                 story.append(Paragraph("Understanding the Data", self.section_style))
                 story.append(Paragraph(
                     f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
                     f"We focus on three key metrics:",
                     self.body_style
                 ))
-                
-                # Add bullet points for the three categories
                 story.append(Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style))
                 story.append(Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style))
                 story.append(Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style))
-                
                 story.append(Paragraph(
                     f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
                     f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
                     self.body_style
                 ))
                 story.append(Spacer(1, 15))
-                
-                # Overall Branch Trends - AI provides narrative, Python handles tables
+                # Overall Branch Trends Section
+                story.append(PageBreak())
                 story.append(Paragraph("Overall Branch Trends", self.section_style))
-                
+                if ai_analysis['overall_trends']:
+                    story.extend(self.format_ai_content(ai_analysis['overall_trends']))
+                    story.append(Spacer(1, 15))
                 if not county_trends.empty:
-                    # Add AI-generated narrative analysis (text only)
-                    if ai_analysis['overall_trends']:
-                        story.extend(self.format_ai_content(ai_analysis['overall_trends']))
-                        story.append(Spacer(1, 15))
-                    
-                    # Python generates all tables and formatting
                     story.append(Paragraph("Detailed Branch Trends Data:", self.subsection_style))
                     trend_data = []
                     trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
-                    
                     for _, row in county_trends.iterrows():
                         trend_data.append([
                             self.format_year(row['year']),
@@ -630,49 +657,35 @@ class EnhancedPDFReportGenerator:
                             self.format_percentage_table(row['mmct_pct']),
                             self.format_percentage_table(row['both_pct'])
                         ])
-                    
-                    # Python handles all table styling with larger fonts and better column widths
                     trend_table = Table(trend_data, colWidths=[0.8*inch, 1.1*inch, 1*inch, 0.9*inch, 1*inch, 0.9*inch, 0.9*inch, 0.9*inch])
                     trend_table.setStyle(TableStyle([
-                        # Header styling
                         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
                         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, 0), 10),  # Larger header font
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
                         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                         ('TOPPADDING', (0, 0), (-1, 0), 12),
-                        # Data row styling
                         ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
                         ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-                        ('FONTSIZE', (0, 1), (-1, -1), 9),  # Larger data font
+                        ('FONTSIZE', (0, 1), (-1, -1), 9),
                         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                         ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
                         ('TOPPADDING', (0, 1), (-1, -1), 8),
                     ]))
-                    
-                    story.append(trend_table)
-                    story.append(Spacer(1, 15))
-                
+                    story.append(KeepTogether([trend_table, Spacer(1, 15)]))
+                # Market Concentration Section
                 story.append(PageBreak())
-                
-                # Market Concentration Analysis - AI provides narrative, Python handles tables
                 story.append(Paragraph("Market Concentration: Largest Banks Analysis", self.section_style))
-                
                 if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
-                    
                     if not top_bank_data.empty:
-                        # Add AI-generated narrative analysis (text only)
                         if ai_analysis['bank_strategies']:
                             story.extend(self.format_ai_content(ai_analysis['bank_strategies']))
                             story.append(Spacer(1, 15))
-                        
-                        # Python generates market concentration summary
                         total_top_branches = top_bank_data['total_branches'].sum()
                         total_county_branches = county_market_shares['total_branches'].sum()
                         top_percentage = (total_top_branches / total_county_branches * 100) if total_county_branches > 0 else 0
-                        
                         story.append(Paragraph(
                             f"<b>Market Concentration Summary:</b> As of {max(self.years)}, {len(top_bank_data)} banks control "
                             f"{self.format_percentage(top_percentage)} of all branches in {county}, operating "
@@ -680,14 +693,10 @@ class EnhancedPDFReportGenerator:
                             f"This represents a {len(top_bank_data)}-bank oligopoly in the county's banking sector.",
                             self.body_style
                         ))
-                        
                         story.append(Spacer(1, 15))
-                        
-                        # Python generates all bank tables and formatting
                         story.append(Paragraph("Top Banks Market Share Data:", self.subsection_style))
                         bank_table_data = []
                         bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
-                        
                         for _, row in top_bank_data.iterrows():
                             bank_table_data.append([
                                 Paragraph(row['bank_name'], ParagraphStyle(
@@ -704,44 +713,32 @@ class EnhancedPDFReportGenerator:
                                 self.format_percentage_table(row['mmct_pct']),
                                 self.format_percentage_table(row['both_pct'])
                             ])
-                        
-                        # Python handles all table styling with larger fonts and better bank name formatting
-                        bank_table = Table(bank_table_data, colWidths=[2.5*inch, 1.1*inch, 1.1*inch, 0.9*inch, 0.9*inch, 1*inch])  # Total: 7.5 inches
+                        bank_table = Table(bank_table_data, colWidths=[2.5*inch, 1.1*inch, 1.1*inch, 0.9*inch, 0.9*inch, 1*inch])
                         bank_table.setStyle(TableStyle([
-                            # Header styling
                             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
                             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                            ('FONTSIZE', (0, 0), (-1, 0), 10),  # Larger header font
+                            ('FONTSIZE', (0, 0), (-1, 0), 10),
                             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                             ('TOPPADDING', (0, 0), (-1, 0), 12),
-                            # Data row styling
                             ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
                             ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-                            ('FONTSIZE', (0, 1), (-1, -1), 9),  # Larger data font
+                            ('FONTSIZE', (0, 1), (-1, -1), 9),
                             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                             ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
                             ('TOPPADDING', (0, 1), (-1, -1), 8),
-                            # Bank name column specific styling
-                            ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),  # Center bank names vertically
+                            ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                         ]))
-                        
-                        story.append(bank_table)
-                        story.append(Spacer(1, 15))
-                        
-                        # Python generates bank growth analysis table
+                        story.append(KeepTogether([bank_table, Spacer(1, 15)]))
                         if not county_bank_analysis.empty:
                             story.append(Paragraph(
                                 f"<b>Growth Analysis:</b> The following table shows how the branch counts for these top banks "
                                 f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:",
                                 self.body_style
                             ))
-                            
-                            # Python generates all growth data and formatting
                             growth_data = []
                             growth_data.append(['Bank', f'Branches\n({self.years[0]})', f'Branches\n({self.years[-1]})', f'Absolute\nChange', f'Percentage\nChange %'])
-                            
                             for _, row in county_bank_analysis.iterrows():
                                 growth_data.append([
                                     Paragraph(row['bank_name'], ParagraphStyle(
@@ -757,57 +754,39 @@ class EnhancedPDFReportGenerator:
                                     f"{'+' if row['absolute_change'] > 0 else ''}{row['absolute_change']}",
                                     f"{'+' if row['percentage_change'] > 0 else ''}{self.format_percentage_table(row['percentage_change'])}"
                                 ])
-                            
-                            # Python handles all table styling with larger fonts
-                            growth_table = Table(growth_data, colWidths=[2.5*inch, 1.1*inch, 1.1*inch, 1*inch, 1.8*inch])  # Total: 7.5 inches
+                            growth_table = Table(growth_data, colWidths=[2.5*inch, 1.1*inch, 1.1*inch, 1*inch, 1.8*inch])
                             growth_table.setStyle(TableStyle([
-                                # Header styling
                                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
                                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                ('FONTSIZE', (0, 0), (-1, 0), 10),  # Larger header font
+                                ('FONTSIZE', (0, 0), (-1, 0), 10),
                                 ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                                 ('TOPPADDING', (0, 0), (-1, 0), 12),
-                                # Data row styling
                                 ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
                                 ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-                                ('FONTSIZE', (0, 1), (-1, -1), 9),  # Larger data font
+                                ('FONTSIZE', (0, 1), (-1, -1), 9),
                                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                                 ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
-                                # Bank name column specific styling
-                                ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),  # Center bank names vertically
+                                ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            
-                            story.append(growth_table)
-                            story.append(Spacer(1, 15))
-                        
-                        # Python generates community impact comparison table
+                            story.append(KeepTogether([growth_table, Spacer(1, 15)]))
                         if county in bank_analysis and not bank_analysis[county].empty:
-                            # Add AI-generated community impact analysis (text only)
                             if ai_analysis['community_impact']:
                                 story.extend(self.format_ai_content(ai_analysis['community_impact']))
                                 story.append(Spacer(1, 15))
-                            
-                            # Python generates all comparison data and formatting
                             story.append(Paragraph("Community Impact Comparison Data:", self.subsection_style))
                             comparison_data = []
                             comparison_data.append(['Bank', 'LMI %', 'MMCT %', 'Both %', 'LMI vs\nAvg', 'MMCT vs\nAvg'])
-                            
                             for _, row in bank_analysis[county].iterrows():
-                                # Get bank's current stats
                                 bank_current = county_market_shares[county_market_shares['bank_name'] == row['bank_name']]
                                 if not bank_current.empty:
                                     bank_lmi = bank_current.iloc[0]['lmict_pct']
                                     bank_mmct = bank_current.iloc[0]['mmct_pct']
-                                    # Calculate "Both %" as the minimum of LMI % and MMCT % (theoretical maximum overlap)
                                     bank_both = min(bank_lmi, bank_mmct) if bank_lmi > 0 and bank_mmct > 0 else 0
-                                    
-                                    # Determine comparison with indicators
                                     lmi_vs_avg = "▲" if bank_lmi > county_comparisons['county_avg_lmict'] else "▼" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
                                     mmct_vs_avg = "▲" if bank_mmct > county_comparisons['county_avg_mmct'] else "▼" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
-                                    
                                     comparison_data.append([
                                         Paragraph(row['bank_name'], ParagraphStyle(
                                             'BankName',
@@ -823,46 +802,35 @@ class EnhancedPDFReportGenerator:
                                         lmi_vs_avg,
                                         mmct_vs_avg
                                     ])
-                            
-                            # Python handles all table styling with larger fonts
-                            comparison_table = Table(comparison_data, colWidths=[2.5*inch, 0.9*inch, 0.9*inch, 0.9*inch, 1.1*inch, 1.2*inch])  # Total: 7.5 inches
+                            comparison_table = Table(comparison_data, colWidths=[2.5*inch, 0.9*inch, 0.9*inch, 0.9*inch, 1.1*inch, 1.2*inch])
                             comparison_table.setStyle(TableStyle([
-                                # Header styling
                                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
                                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                ('FONTSIZE', (0, 0), (-1, 0), 10),  # Larger header font
+                                ('FONTSIZE', (0, 0), (-1, 0), 10),
                                 ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                                 ('TOPPADDING', (0, 0), (-1, 0), 12),
-                                # Data row styling
                                 ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
                                 ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-                                ('FONTSIZE', (0, 1), (-1, -1), 9),  # Larger data font
+                                ('FONTSIZE', (0, 1), (-1, -1), 9),
                                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
                                 ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
-                                # Bank name column specific styling
-                                ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),  # Center bank names vertically
+                                ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            
-                            story.append(comparison_table)
-                            story.append(Spacer(1, 15))
-                
-                # Conclusion - AI provides narrative, Python handles fallback
+                            story.append(KeepTogether([comparison_table, Spacer(1, 15)]))
+                # Conclusion Section
+                story.append(PageBreak())
                 story.append(Paragraph("Conclusion and Strategic Implications", self.section_style))
-                
                 if ai_analysis['conclusion']:
-                    # AI-generated narrative conclusion
                     story.extend(self.format_ai_content(ai_analysis['conclusion']))
                 else:
-                    # Python-generated fallback conclusion
                     if not county_trends.empty:
                         first_year_total = county_trends['total_branches'].iloc[0]
                         last_year_total = county_trends['total_branches'].iloc[-1]
                         total_change = last_year_total - first_year_total
                         change_direction = "declined" if total_change < 0 else "increased" if total_change > 0 else "remained stable"
-                        
                         story.append(Paragraph(
                             f"In summary, {county} experienced a {change_direction} in bank branches from {self.years[0]} to {self.years[-1]}, "
                             f"changing from {self.format_number(first_year_total)} to {self.format_number(last_year_total)} branches. "
@@ -871,11 +839,9 @@ class EnhancedPDFReportGenerator:
                             f"to serving diverse and underserved communities.",
                             self.body_style
                         ))
-        
-        # Add Methodology and Technical Notes at the end
+        # Methodology and Technical Notes Section
         story.append(PageBreak())
         story.append(Paragraph("Methodology and Technical Notes", self.section_style))
-        
         story.append(Paragraph(
             f"<b>Analysis Period:</b> {years_str}<br/>"
             f"<b>Geographic Scope:</b> {counties_str}<br/>"
@@ -886,7 +852,6 @@ class EnhancedPDFReportGenerator:
             self.body_style
         ))
         story.append(Spacer(1, 15))
-        
         story.append(Paragraph(
             f"This analysis examines bank branch trends using FDIC Summary of Deposits data. "
             f"The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, "
@@ -896,7 +861,6 @@ class EnhancedPDFReportGenerator:
             self.body_style
         ))
         story.append(Spacer(1, 15))
-        
         story.append(Paragraph(
             "<b>Data Definitions:</b><br/>"
             "• <b>LMICT:</b> Low-to-Moderate Income Census Tracts - areas with median family income below 80% of the area median income<br/>"
@@ -905,15 +869,13 @@ class EnhancedPDFReportGenerator:
             "• <b>Market Share:</b> Percentage of total branches in the county controlled by each bank",
             self.body_style
         ))
-        
-        # Build the PDF - All formatting handled by Python/ReportLab
         doc.build(story)
         print(f"✅ AI-powered PDF report generated successfully: {output_path}")
         print(f"   - AI provided narrative text only")
         print(f"   - Python handled all tables, charts, and formatting")
 
 
-def generate_pdf_report_from_data(data: pd.DataFrame, counties: List[str], years: List[int], output_path: str):
+def generate_pdf_report_from_data(data: pd.DataFrame, counties: List[str], years: List[int], output_path: str, ai_sections: Dict[str, str] = None):
     """
     Generate an enhanced PDF report from the given data.
     
@@ -922,6 +884,21 @@ def generate_pdf_report_from_data(data: pd.DataFrame, counties: List[str], years
         counties: List of counties analyzed
         years: List of years analyzed
         output_path: Path where to save the PDF
+        ai_sections: Optional dictionary of AI-generated analysis sections
     """
     generator = EnhancedPDFReportGenerator(data, counties, years)
+    
+    # If AI sections are provided, use them instead of generating new ones
+    if ai_sections:
+        generator.ai_analysis = ai_sections
+    else:
+        # Generate AI analysis as usual
+        generator.ai_analysis = generator.generate_enhanced_ai_analysis(
+            generator.data, 
+            generator.calculate_enhanced_trends(),
+            generator.calculate_enhanced_market_share(),
+            generator.analyze_enhanced_bank_growth(generator.get_enhanced_top_banks(generator.calculate_enhanced_market_share())),
+            generator.calculate_enhanced_comparisons(generator.analyze_enhanced_bank_growth(generator.get_enhanced_top_banks(generator.calculate_enhanced_market_share())))
+        )
+    
     generator.generate_enhanced_pdf_report(output_path) 
