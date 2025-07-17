@@ -132,7 +132,7 @@ def prepare_data_for_pdf(raw_data: pd.DataFrame) -> pd.DataFrame:
     return raw_data
 
 
-def run_analysis(counties_str: str, years_str: str) -> Dict:
+def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
     """Run analysis for web interface. Returns a dictionary with success/error status."""
     try:
         # Parse parameters
@@ -153,18 +153,33 @@ def run_analysis(counties_str: str, years_str: str) -> Dict:
             except ValueError as e:
                 return {'success': False, 'error': str(e)}
         
-        # Execute BigQuery queries
+        # Execute BigQuery queries with tracking if run_id provided
         sql_template = load_sql_template()
         all_results = []
         
-        for county in clarified_counties:
-            for year in years:
-                try:
-                    results = execute_query(sql_template, county, year)
-                    all_results.extend(results)
-                except Exception as e:
-                    print(f"Error querying {county} {year}: {e}")
-                    continue
+        if run_id:
+            # Use tracked BigQuery client
+            from src.utils.bq_tracker import TrackedBigQueryClient
+            bq_client = TrackedBigQueryClient(run_id)
+            
+            for county in clarified_counties:
+                for year in years:
+                    try:
+                        results = bq_client.execute_query(sql_template, county, year)
+                        all_results.extend(results)
+                    except Exception as e:
+                        print(f"Error querying {county} {year}: {e}")
+                        continue
+        else:
+            # Use regular BigQuery client
+            for county in clarified_counties:
+                for year in years:
+                    try:
+                        results = execute_query(sql_template, county, year)
+                        all_results.extend(results)
+                    except Exception as e:
+                        print(f"Error querying {county} {year}: {e}")
+                        continue
         
         if not all_results:
             return {'success': False, 'error': 'No data found for the specified parameters'}
@@ -176,12 +191,50 @@ def run_analysis(counties_str: str, years_str: str) -> Dict:
         excel_path = os.path.join(OUTPUT_DIR, 'fdic_branch_analysis.xlsx')
         save_excel_report(report_data, excel_path)
         
+        # Update run metadata with file paths
+        if run_id:
+            from src.utils.run_logger import run_logger
+            run_logger.update_run(run_id, excel_file=excel_path)
+        
         # Prepare data for PDF generation
         pdf_data = prepare_data_for_pdf(report_data['raw_data'])
         
-        # Generate PDF report
+        # Generate PDF report with AI analysis if run_id provided
         pdf_path = os.path.join(OUTPUT_DIR, 'fdic_branch_analysis.pdf')
-        generate_pdf_report_from_data(pdf_data, clarified_counties, years, pdf_path)
+        
+        if run_id:
+            # Use tracked AI analyzer
+            from src.analysis.ai_tracker import TrackedAIAnalyzer
+            ai_analyzer = TrackedAIAnalyzer(run_id)
+            
+            # Create data dictionary with DataFrame and metadata for AI analysis
+            ai_data = {
+                'data': pdf_data,
+                'counties': clarified_counties,
+                'years': years,
+                'total_branches': len(pdf_data),
+                'top_banks': pdf_data['bank_name'].value_counts().head(5).index.tolist() if 'bank_name' in pdf_data.columns else []
+            }
+            
+            # Generate AI analysis sections
+            ai_sections = {
+                'executive_summary': ai_analyzer.generate_executive_summary(ai_data),
+                'key_findings': ai_analyzer.generate_key_findings(ai_data),
+                'trends_analysis': ai_analyzer.generate_trends_analysis(ai_data),
+                'bank_strategies': ai_analyzer.generate_bank_strategies_analysis(ai_data),
+                'community_impact': ai_analyzer.generate_community_impact_analysis(ai_data),
+                'conclusion': ai_analyzer.generate_conclusion(ai_data)
+            }
+            
+            # Generate PDF with AI analysis
+            generate_pdf_report_from_data(pdf_data, clarified_counties, years, pdf_path, ai_sections)
+        else:
+            # Generate PDF without AI analysis
+            generate_pdf_report_from_data(pdf_data, clarified_counties, years, pdf_path)
+        
+        # Update run metadata with PDF file path
+        if run_id:
+            run_logger.update_run(run_id, pdf_file=pdf_path)
         
         return {
             'success': True,
@@ -205,64 +258,127 @@ def main():
     print(f"Counties: {counties}")
     print(f"Years: {years}")
 
-    # Step 2: Clarify county selections once
-    print("\n🔍 Step 2: Clarifying county selections...")
-    clarified_counties = []
-    for county in counties:
-        clarified_county = select_county_interactively(county)
-        clarified_counties.append(clarified_county)
-    
-    print(f"Clarified counties: {clarified_counties}")
-
-    # Step 3: Execute BigQuery for each county/year combination
-    print("\n🔍 Step 3: Executing BigQuery queries...")
-    sql_template = load_sql_template()
-    all_results = []
-    
-    for county in clarified_counties:
-        for year in years:
-            print(f"  Querying {county} for year {year}...")
-            try:
-                results = execute_query(sql_template, county, year)
-                all_results.extend(results)
-                print(f"    Found {len(results)} records")
-            except Exception as e:
-                print(f"    Error querying {county} {year}: {e}")
-                continue
-
-    if not all_results:
-        print("❌ No data found for the specified parameters")
-        sys.exit(1)
-
-    # Step 4: Build and save report
-    print(f"\n📊 Step 4: Building report with {len(all_results)} records...")
+    # Set up Google Cloud credentials for BigQuery logging
     try:
-        report_data = build_report(all_results, clarified_counties, years)
+        from scripts.setup_gcp_credentials import setup_environment
+        setup_environment()
+    except ImportError:
+        print("Warning: Could not set up GCP credentials for logging")
+    
+    # Start run logging for CLI
+    from src.utils.run_logger import run_logger
+    run_id = run_logger.start_run(
+        counties=counties,
+        years=years,
+        interface_type="cli"
+    )
+
+    try:
+        # Step 2: Clarify county selections once
+        print("\n🔍 Step 2: Clarifying county selections...")
+        clarified_counties = []
+        for county in counties:
+            clarified_county = select_county_interactively(county)
+            clarified_counties.append(clarified_county)
         
-        # Generate filename with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        counties_str = "_".join(clarified_counties).replace(" ", "_").replace(",", "")
-        years_str = "_".join(map(str, years))
-        filename = f"fdic_branch_report_{counties_str}_{years_str}_{timestamp}.xlsx"
+        print(f"Clarified counties: {clarified_counties}")
+
+        # Step 3: Execute BigQuery for each county/year combination
+        print("\n🔍 Step 3: Executing BigQuery queries...")
+        sql_template = load_sql_template()
+        all_results = []
         
-        output_path = os.path.join(OUTPUT_DIR, filename)
-        save_excel_report(report_data, output_path)
-        print(f"✅ Report saved successfully: {output_path}")
+        # Use tracked BigQuery client
+        from src.utils.bq_tracker import TrackedBigQueryClient
+        bq_client = TrackedBigQueryClient(run_id)
         
-        # Prepare data for PDF generation
-        pdf_data = prepare_data_for_pdf(report_data['raw_data'])
+        for county in clarified_counties:
+            for year in years:
+                print(f"  Querying {county} for year {year}...")
+                try:
+                    results = bq_client.execute_query(sql_template, county, year)
+                    all_results.extend(results)
+                    print(f"    Found {len(results)} records")
+                except Exception as e:
+                    print(f"    Error querying {county} {year}: {e}")
+                    continue
+
+        if not all_results:
+            print("❌ No data found for the specified parameters")
+            run_logger.end_run(run_id, success=False, error_message="No data found for the specified parameters")
+            sys.exit(1)
+
+        # Step 4: Build and save report
+        print(f"\n📊 Step 4: Building report with {len(all_results)} records...")
+        try:
+            report_data = build_report(all_results, clarified_counties, years)
+            
+            # Generate filename with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            counties_str = "_".join(clarified_counties).replace(" ", "_").replace(",", "")
+            years_str = "_".join(map(str, years))
+            filename = f"fdic_branch_report_{counties_str}_{years_str}_{timestamp}.xlsx"
+            
+            output_path = os.path.join(OUTPUT_DIR, filename)
+            save_excel_report(report_data, output_path)
+            print(f"✅ Report saved successfully: {output_path}")
+            
+            # Update run metadata with Excel file path
+            run_logger.update_run(run_id, excel_file=output_path)
+            
+            # Prepare data for PDF generation
+            pdf_data = prepare_data_for_pdf(report_data['raw_data'])
+            
+            # PDF report generation with AI analysis
+            pdf_output_path = output_path.replace('.xlsx', '.pdf')
+            print(f"\n📝 Generating PDF report...")
+            
+            # Use tracked AI analyzer
+            from src.analysis.ai_tracker import TrackedAIAnalyzer
+            ai_analyzer = TrackedAIAnalyzer(run_id)
+            
+            # Create data dictionary with DataFrame and metadata for AI analysis
+            ai_data = {
+                'data': pdf_data,
+                'counties': clarified_counties,
+                'years': years,
+                'total_branches': len(pdf_data),
+                'top_banks': pdf_data['bank_name'].value_counts().head(5).index.tolist() if 'bank_name' in pdf_data.columns else []
+            }
+            
+            # Generate AI analysis sections
+            ai_sections = {
+                'executive_summary': ai_analyzer.generate_executive_summary(ai_data),
+                'key_findings': ai_analyzer.generate_key_findings(ai_data),
+                'trends_analysis': ai_analyzer.generate_trends_analysis(ai_data),
+                'bank_strategies': ai_analyzer.generate_bank_strategies_analysis(ai_data),
+                'community_impact': ai_analyzer.generate_community_impact_analysis(ai_data),
+                'conclusion': ai_analyzer.generate_conclusion(ai_data)
+            }
+            
+            # Generate PDF with AI analysis
+            generate_pdf_report_from_data(pdf_data, clarified_counties, years, pdf_output_path, ai_sections)
+            print(f"✅ PDF report saved successfully: {pdf_output_path}")
+            
+            # Update run metadata with PDF file path
+            run_logger.update_run(run_id, pdf_file=pdf_output_path)
+            
+            # End the run successfully
+            run_logger.end_run(run_id, success=True)
+            
+        except Exception as e:
+            error_msg = f"Error building report: {e}"
+            print(error_msg)
+            run_logger.end_run(run_id, success=False, error_message=error_msg)
+            sys.exit(1)
         
-        # PDF report generation
-        pdf_output_path = output_path.replace('.xlsx', '.pdf')
-        print(f"\n📝 Generating PDF report...")
-        generate_pdf_report_from_data(pdf_data, clarified_counties, years, pdf_output_path)
-        print(f"✅ PDF report saved successfully: {pdf_output_path}")
+        print("\n🎉 Report generation completed successfully!")
         
     except Exception as e:
-        print(f"Error building report: {e}")
+        error_msg = f"Analysis failed: {str(e)}"
+        print(error_msg)
+        run_logger.end_run(run_id, success=False, error_message=error_msg)
         sys.exit(1)
-    
-    print("\n🎉 Report generation completed successfully!")
 
 
 if __name__ == "__main__":

@@ -7,13 +7,31 @@ import sys
 import os
 from typing import Dict, Any, Optional
 import json
+import pandas as pd
+import numpy as np
 
 # Add the src directory to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from src.analysis.gpt_utils import AIAnalyzer, ask_ai
+from src.analysis.gpt_utils import AIAnalyzer, ask_ai, convert_numpy_types
 from src.utils.run_logger import run_logger
 from config import AI_PROVIDER, CLAUDE_MODEL, GPT_MODEL
+
+def convert_dataframe_to_json_serializable(data: Any) -> Any:
+    """Convert DataFrame and numpy types to JSON-serializable format."""
+    if isinstance(data, pd.DataFrame):
+        # Convert DataFrame to records and handle numpy types
+        records = data.to_dict('records')
+        return convert_numpy_types(records)
+    elif isinstance(data, dict):
+        # Recursively convert dictionary values
+        return {key: convert_dataframe_to_json_serializable(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        # Recursively convert list items
+        return [convert_dataframe_to_json_serializable(item) for item in data]
+    else:
+        # Use the existing numpy type conversion
+        return convert_numpy_types(data)
 
 class TrackedAIAnalyzer:
     """AI Analyzer wrapper that tracks usage for logging."""
@@ -64,13 +82,16 @@ class TrackedAIAnalyzer:
     
     def generate_executive_summary(self, data: Dict[str, Any]) -> str:
         """Generate executive summary with tracking."""
+        # Convert data to JSON-serializable format
+        json_data = convert_dataframe_to_json_serializable(data)
+        
         prompt = f"""
         Generate an executive summary for the following banking data:
         
-        Counties: {data.get('counties', [])}
-        Years: {data.get('years', [])}
-        Total branches: {data.get('total_branches', 0)}
-        Top banks: {data.get('top_banks', [])}
+        Counties: {json_data.get('counties', [])}
+        Years: {json_data.get('years', [])}
+        Total branches: {json_data.get('total_branches', 0)}
+        Top banks: {json_data.get('top_banks', [])}
         
         Please provide a concise executive summary highlighting key trends and insights.
         """
@@ -79,10 +100,17 @@ class TrackedAIAnalyzer:
     
     def generate_key_findings(self, data: Dict[str, Any]) -> str:
         """Generate key findings with tracking."""
+        # Convert data to JSON-serializable format
+        json_data = convert_dataframe_to_json_serializable(data)
+        
         prompt = f"""
         Based on the following banking data, identify the key findings:
         
-        Data: {json.dumps(data, indent=2)}
+        Counties: {json_data.get('counties', [])}
+        Years: {json_data.get('years', [])}
+        Total branches: {json_data.get('total_branches', 0)}
+        Top banks: {json_data.get('top_banks', [])}
+        Data: {json.dumps(json_data.get('data', []), indent=2)}
         
         Please provide 3-5 key findings about market trends, bank strategies, and community impact.
         """
@@ -91,10 +119,15 @@ class TrackedAIAnalyzer:
     
     def generate_trends_analysis(self, data: Dict[str, Any]) -> str:
         """Generate trends analysis with tracking."""
+        # Convert data to JSON-serializable format
+        json_data = convert_dataframe_to_json_serializable(data)
+        
         prompt = f"""
         Analyze the trends in this banking data:
         
-        Data: {json.dumps(data, indent=2)}
+        Counties: {json_data.get('counties', [])}
+        Years: {json_data.get('years', [])}
+        Data: {json.dumps(json_data.get('data', []), indent=2)}
         
         Please provide insights about year-over-year changes, market consolidation, and strategic implications.
         """
@@ -103,10 +136,16 @@ class TrackedAIAnalyzer:
     
     def generate_bank_strategies_analysis(self, data: Dict[str, Any]) -> str:
         """Generate bank strategies analysis with tracking."""
+        # Convert data to JSON-serializable format
+        json_data = convert_dataframe_to_json_serializable(data)
+        
         prompt = f"""
         Analyze the banking strategies evident in this data:
         
-        Data: {json.dumps(data, indent=2)}
+        Counties: {json_data.get('counties', [])}
+        Years: {json_data.get('years', [])}
+        Top banks: {json_data.get('top_banks', [])}
+        Data: {json.dumps(json_data.get('data', []), indent=2)}
         
         Please provide insights about individual bank strategies, market positioning, and competitive dynamics.
         """
@@ -115,10 +154,15 @@ class TrackedAIAnalyzer:
     
     def generate_community_impact_analysis(self, data: Dict[str, Any]) -> str:
         """Generate community impact analysis with tracking."""
+        # Convert data to JSON-serializable format
+        json_data = convert_dataframe_to_json_serializable(data)
+        
         prompt = f"""
         Analyze the community impact of banking decisions in this data:
         
-        Data: {json.dumps(data, indent=2)}
+        Counties: {json_data.get('counties', [])}
+        Years: {json_data.get('years', [])}
+        Data: {json.dumps(json_data.get('data', []), indent=2)}
         
         Please provide insights about financial inclusion, community reinvestment, and access to banking services.
         """
@@ -127,10 +171,17 @@ class TrackedAIAnalyzer:
     
     def generate_conclusion(self, data: Dict[str, Any]) -> str:
         """Generate conclusion with tracking."""
+        # Convert data to JSON-serializable format
+        json_data = convert_dataframe_to_json_serializable(data)
+        
         prompt = f"""
         Provide a comprehensive conclusion for this banking analysis:
         
-        Data: {json.dumps(data, indent=2)}
+        Counties: {json_data.get('counties', [])}
+        Years: {json_data.get('years', [])}
+        Total branches: {json_data.get('total_branches', 0)}
+        Top banks: {json_data.get('top_banks', [])}
+        Data: {json.dumps(json_data.get('data', []), indent=2)}
         
         Please synthesize the key insights and provide strategic recommendations.
         """
