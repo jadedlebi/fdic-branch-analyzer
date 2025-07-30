@@ -640,7 +640,7 @@ class EnhancedPDFReportGenerator:
                 complete_story.append(PageBreak())
                 self.current_page += 1
                 self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{county}")
-                complete_story.append(Paragraph(f'<a name="exec_summary_{county}">Executive Summary</a>', self.section_style))
+                complete_story.append(Paragraph(f'<a name="exec_summary_{county}"></a>Executive Summary', self.section_style))
                 if ai_analysis['executive_summary']:
                     complete_story.extend(self.format_ai_content(ai_analysis['executive_summary']))
                 complete_story.append(Spacer(1, 20))
@@ -649,7 +649,7 @@ class EnhancedPDFReportGenerator:
                 complete_story.append(PageBreak())
                 self.current_page += 1
                 self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{county}")
-                complete_story.append(Paragraph(f'<a name="key_findings_{county}">Key Findings</a>', self.section_style))
+                complete_story.append(Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style))
                 if ai_analysis['key_findings']:
                     complete_story.extend(self.format_key_findings(ai_analysis['key_findings']))
                 complete_story.append(Spacer(1, 20))
@@ -658,7 +658,7 @@ class EnhancedPDFReportGenerator:
                 complete_story.append(PageBreak())
                 self.current_page += 1
                 self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{county}")
-                complete_story.append(Paragraph(f'<a name="data_understanding_{county}">Understanding the Data</a>', self.section_style))
+                complete_story.append(Paragraph(f'<a name="data_understanding_{county}"></a>Understanding the Data', self.section_style))
                 complete_story.append(Paragraph(
                     f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
                     f"We focus on three key metrics:",
@@ -678,7 +678,7 @@ class EnhancedPDFReportGenerator:
                 complete_story.append(PageBreak())
                 self.current_page += 1
                 self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{county}")
-                complete_story.append(Paragraph(f'<a name="branch_trends_{county}">Overall Branch Trends</a>', self.section_style))
+                complete_story.append(Paragraph(f'<a name="branch_trends_{county}"></a>Overall Branch Trends', self.section_style))
                 if ai_analysis['overall_trends']:
                     complete_story.extend(self.format_ai_content(ai_analysis['overall_trends']))
                     complete_story.append(Spacer(1, 20))
@@ -720,7 +720,7 @@ class EnhancedPDFReportGenerator:
                 complete_story.append(PageBreak())
                 self.current_page += 1
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{county}")
-                complete_story.append(Paragraph(f'<a name="market_concentration_{county}">Market Concentration: Largest Banks Analysis</a>', self.section_style))
+                complete_story.append(Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style))
                 if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
                     if not top_bank_data.empty:
@@ -878,7 +878,7 @@ class EnhancedPDFReportGenerator:
                 complete_story.append(PageBreak())
                 self.current_page += 1
                 self.add_toc_entry(f"Conclusion and Strategic Implications - {county}", 1, f"conclusion_{county}")
-                complete_story.append(Paragraph(f'<a name="conclusion_{county}">Conclusion and Strategic Implications</a>', self.section_style))
+                complete_story.append(Paragraph(f'<a name="conclusion_{county}"></a>Conclusion and Strategic Implications', self.section_style))
                 if ai_analysis['conclusion']:
                     complete_story.extend(self.format_ai_content(ai_analysis['conclusion']))
                 else:
@@ -900,7 +900,7 @@ class EnhancedPDFReportGenerator:
         complete_story.append(PageBreak())
         self.current_page += 1
         self.add_toc_entry("Methodology and Technical Notes", 1, "methodology")
-        complete_story.append(Paragraph('<a name="methodology">Methodology and Technical Notes</a>', self.section_style))
+        complete_story.append(Paragraph('<a name="methodology"></a>Methodology and Technical Notes', self.section_style))
         complete_story.append(Paragraph(
             f"<b>Analysis Period:</b> {years_str}<br/>"
             f"<b>Geographic Scope:</b> {counties_str}<br/>"
