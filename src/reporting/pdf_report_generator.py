@@ -921,28 +921,28 @@ class EnhancedPDFReportGenerator:
                                 ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
                             complete_story.append(KeepTogether([comparison_table, Spacer(1, 15)]))
-                
-                # Conclusion Section
-                complete_story.append(PageBreak())
-                self.current_page += 1
-                self.add_toc_entry(f"Conclusion and Strategic Implications - {county}", 1, f"conclusion_{county}")
-                complete_story.append(Paragraph(f'<a name="conclusion_{county}"></a>Conclusion and Strategic Implications', self.section_style))
-                if ai_analysis['conclusion']:
-                    complete_story.extend(self.format_ai_content(ai_analysis['conclusion']))
-                else:
-                    if not county_trends.empty:
-                        first_year_total = county_trends['total_branches'].iloc[0]
-                        last_year_total = county_trends['total_branches'].iloc[-1]
-                        total_change = last_year_total - first_year_total
-                        change_direction = "declined" if total_change < 0 else "increased" if total_change > 0 else "remained stable"
-                        complete_story.append(Paragraph(
-                            f"In summary, {county} experienced a {change_direction} in bank branches from {self.years[0]} to {self.years[-1]}, "
-                            f"changing from {self.format_number(first_year_total)} to {self.format_number(last_year_total)} branches. "
-                            f"These trends reflect the evolving landscape of banking in {county}: a more consolidated branch network "
-                            f"that is increasingly concentrated among major institutions while maintaining varying levels of commitment "
-                            f"to serving diverse and underserved communities.",
-                            self.body_style
-                        ))
+            
+            # Conclusion Section
+            complete_story.append(PageBreak())
+            self.current_page += 1
+            self.add_toc_entry(f"Conclusion and Strategic Implications - {county}", 1, f"conclusion_{county}")
+            complete_story.append(Paragraph(f'<a name="conclusion_{county}"></a>Conclusion and Strategic Implications', self.section_style))
+            if ai_analysis['conclusion']:
+                complete_story.extend(self.format_ai_content(ai_analysis['conclusion']))
+            else:
+                if not county_trends.empty:
+                    first_year_total = county_trends['total_branches'].iloc[0]
+                    last_year_total = county_trends['total_branches'].iloc[-1]
+                    total_change = last_year_total - first_year_total
+                    change_direction = "declined" if total_change < 0 else "increased" if total_change > 0 else "remained stable"
+                    complete_story.append(Paragraph(
+                        f"In summary, {county} experienced a {change_direction} in bank branches from {self.years[0]} to {self.years[-1]}, "
+                        f"changing from {self.format_number(first_year_total)} to {self.format_number(last_year_total)} branches. "
+                        f"These trends reflect the evolving landscape of banking in {county}: a more consolidated branch network "
+                        f"that is increasingly concentrated among major institutions while maintaining varying levels of commitment "
+                        f"to serving diverse and underserved communities.",
+                        self.body_style
+                    ))
         
         # Methodology and Technical Notes Section
         complete_story.append(PageBreak())
