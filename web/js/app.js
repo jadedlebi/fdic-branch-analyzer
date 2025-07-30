@@ -8,20 +8,8 @@ const progressText = document.getElementById('progressText');
 const downloadBtn = document.getElementById('downloadBtn');
 const errorMessage = document.getElementById('errorMessage');
 
-// Progress messages
-const progressMessages = [
-    'Initializing analysis...',
-    'Connecting to BigQuery...',
-    'Querying branch data...',
-    'Processing county information...',
-    'Generating AI insights...',
-    'Creating Excel report...',
-    'Generating PDF report...',
-    'Finalizing analysis...'
-];
-
+// Real-time progress tracking
 let currentProgress = 0;
-let progressInterval;
 
 // Form submission handler
 analysisForm.addEventListener('submit', async function(e) {
@@ -55,15 +43,17 @@ analysisForm.addEventListener('submit', async function(e) {
         const result = await response.json();
         
         if (result.success) {
-            showResults();
+            const jobId = result.job_id;
+            listenForProgress(jobId);
         } else {
             showError(result.error || 'Analysis failed. Please try again.');
+            hideProgress();
+            enableForm();
         }
         
     } catch (error) {
         console.error('Error:', error);
         showError('Network error. Please check your connection and try again.');
-    } finally {
         hideProgress();
         enableForm();
     }
@@ -80,23 +70,14 @@ function showProgress() {
     resultsSection.style.display = 'none';
     errorSection.style.display = 'none';
     
-    // Start progress animation
-    startProgressAnimation();
+    // Initialize progress bar
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('progressText').textContent = 'Initializing analysis...';
 }
 
 // Hide progress section
 function hideProgress() {
     progressSection.style.display = 'none';
-    clearInterval(progressInterval);
-}
-
-// Start progress animation
-function startProgressAnimation() {
-    currentProgress = 0;
-    progressInterval = setInterval(() => {
-        currentProgress = (currentProgress + 1) % progressMessages.length;
-        progressText.textContent = progressMessages[currentProgress];
-    }, 1500);
 }
 
 // Show results section
@@ -305,4 +286,24 @@ style.textContent = `
         75% { transform: translateX(5px); }
     }
 `;
-document.head.appendChild(style); 
+document.head.appendChild(style);
+
+// Real-time progress bar using SSE
+function listenForProgress(jobId) {
+    const evtSource = new EventSource(`/progress/${jobId}`);
+    evtSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        document.getElementById('progressFill').style.width = data.percent + '%';
+        document.getElementById('progressText').textContent = data.step;
+        if (data.done || data.error) {
+            evtSource.close();
+            if (data.error) {
+                showError(data.error);
+            } else {
+                showResults();
+            }
+            hideProgress();
+            enableForm();
+        }
+    };
+} 

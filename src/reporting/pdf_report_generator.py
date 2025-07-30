@@ -20,7 +20,16 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT, TA_JUSTIFY
 import os
 import json
 import re
-from analysis.gpt_utils import AIAnalyzer
+from src.analysis.gpt_utils import AIAnalyzer
+
+
+class TOCEntry:
+    """Represents a table of contents entry with navigation information."""
+    def __init__(self, title: str, level: int, page: int, anchor: str = None):
+        self.title = title
+        self.level = level  # 1 = section, 2 = subsection, 3 = sub-subsection
+        self.page = page
+        self.anchor = anchor or f"toc_{len(title)}".replace(" ", "_").replace(":", "").replace("(", "").replace(")", "")
 
 
 class EnhancedPDFReportGenerator:
@@ -39,6 +48,8 @@ class EnhancedPDFReportGenerator:
         self.styles = getSampleStyleSheet()
         self.setup_enhanced_styles()
         self.ai_analyzer = AIAnalyzer()
+        self.toc_entries = []  # Track table of contents entries
+        self.current_page = 1  # Track current page number
         
     def setup_enhanced_styles(self):
         """Setup enhanced, professional paragraph styles for the report."""
@@ -98,117 +109,105 @@ class EnhancedPDFReportGenerator:
             spaceAfter=10,
             leading=15,
             alignment=TA_JUSTIFY,
-            fontName='Helvetica',
-            textColor=colors.HexColor('#2d3748')
+            textColor=colors.HexColor('#2d3748'),
+            fontName='Helvetica'
         )
         
-        # Enhanced table header style
-        self.table_header_style = ParagraphStyle(
-            'EnhancedTableHeader',
-            parent=self.styles['Normal'],
-            fontSize=10,
-            spaceAfter=5,
-            leading=12,
+        # Enhanced bullet point style
+        self.bullet_style = ParagraphStyle(
+            'EnhancedBullet',
+            parent=self.body_style,
+            leftIndent=20,
+            spaceAfter=8,
+            leading=14
+        )
+        
+        # Enhanced summary box style
+        self.summary_box_style = ParagraphStyle(
+            'EnhancedSummaryBox',
+            parent=self.body_style,
+            backColor=colors.HexColor('#f7fafc'),
+            borderColor=colors.HexColor('#e2e8f0'),
+            borderWidth=1,
+            borderPadding=10,
+            spaceAfter=15,
+            spaceBefore=10
+        )
+        
+        # TOC styles
+        self.toc_title_style = ParagraphStyle(
+            'TOCTitle',
+            parent=self.styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
             alignment=TA_CENTER,
+            textColor=colors.HexColor('#1a365d'),
             fontName='Helvetica-Bold',
-            textColor=colors.white
+            leading=28
         )
         
-        # Enhanced table cell style
-        self.table_cell_style = ParagraphStyle(
-            'EnhancedTableCell',
-            parent=self.styles['Normal'],
-            fontSize=9,
-            spaceAfter=3,
-            leading=11,
-            alignment=TA_CENTER,
-            fontName='Helvetica',
-            textColor=colors.HexColor('#2d3748')
-        )
-        
-        # Key findings style
-        self.key_findings_style = ParagraphStyle(
-            'KeyFindings',
+        self.toc_section_style = ParagraphStyle(
+            'TOCSection',
             parent=self.styles['Normal'],
             fontSize=12,
             spaceAfter=8,
-            leading=16,
-            alignment=TA_LEFT,
+            spaceBefore=15,
+            textColor=colors.HexColor('#2d3748'),
             fontName='Helvetica-Bold',
-            textColor=colors.HexColor('#2d3748'),
-            leftIndent=20
+            leading=14
         )
         
-        # Bullet point style
-        self.bullet_style = ParagraphStyle(
-            'BulletPoint',
-            parent=self.styles['Normal'],
-            fontSize=11,
-            spaceAfter=6,
-            leading=14,
-            alignment=TA_LEFT,
-            fontName='Helvetica',
-            textColor=colors.HexColor('#2d3748'),
-            leftIndent=25,
-            firstLineIndent=-15
-        )
-        
-        # Numbered list style
-        self.numbered_style = ParagraphStyle(
-            'NumberedList',
-            parent=self.styles['Normal'],
-            fontSize=11,
-            spaceAfter=6,
-            leading=14,
-            alignment=TA_LEFT,
-            fontName='Helvetica',
-            textColor=colors.HexColor('#2d3748'),
-            leftIndent=25,
-            firstLineIndent=-15
-        )
-        
-        # Bold keyword style
-        self.bold_style = ParagraphStyle(
-            'BoldKeyword',
-            parent=self.styles['Normal'],
-            fontSize=11,
-            spaceAfter=10,
-            leading=15,
-            alignment=TA_JUSTIFY,
-            fontName='Helvetica-Bold',
-            textColor=colors.HexColor('#2d3748')
-        )
-        
-        # Page number style
-        self.page_number_style = ParagraphStyle(
-            'PageNumber',
+        self.toc_subsection_style = ParagraphStyle(
+            'TOCSubsection',
             parent=self.styles['Normal'],
             fontSize=10,
-            spaceAfter=0,
-            leading=12,
-            alignment=TA_CENTER,
+            spaceAfter=6,
+            spaceBefore=8,
+            leftIndent=20,
+            textColor=colors.HexColor('#4a5568'),
             fontName='Helvetica',
-            textColor=colors.HexColor('#4a5568')
+            leading=12
         )
         
-        # Summary box style for highlighted information
-        self.summary_box_style = ParagraphStyle(
-            'SummaryBox',
+        self.toc_table_style = ParagraphStyle(
+            'TOCTable',
             parent=self.styles['Normal'],
-            fontSize=11,
-            spaceAfter=8,
-            spaceBefore=8,
-            leading=15,
-            alignment=TA_JUSTIFY,
+            fontSize=9,
+            spaceAfter=4,
+            spaceBefore=4,
+            leftIndent=40,
+            textColor=colors.HexColor('#718096'),
             fontName='Helvetica',
-            textColor=colors.HexColor('#2d3748'),
-            leftIndent=10,
-            rightIndent=10,
-            backColor=colors.HexColor('#f7fafc'),
-            borderWidth=1,
-            borderColor=colors.HexColor('#e2e8f0'),
-            borderPadding=8
+            leading=11
         )
+
+    def add_toc_entry(self, title: str, level: int, anchor: str = None):
+        """Add a table of contents entry."""
+        entry = TOCEntry(title, level, self.current_page, anchor)
+        self.toc_entries.append(entry)
+        
+    def create_toc_page(self) -> List:
+        """Create the table of contents page."""
+        toc_story = []
+        
+        # TOC Title
+        toc_story.append(Paragraph("Table of Contents", self.toc_title_style))
+        toc_story.append(Spacer(1, 20))
+        
+        # Add TOC entries
+        for entry in self.toc_entries:
+            if entry.level == 1:  # Section
+                # Create clickable link with page number
+                link_text = f'<link href="#{entry.anchor}">{entry.title}</link>'
+                toc_story.append(Paragraph(link_text, self.toc_section_style))
+            elif entry.level == 2:  # Subsection
+                link_text = f'<link href="#{entry.anchor}">{entry.title}</link>'
+                toc_story.append(Paragraph(link_text, self.toc_subsection_style))
+            elif entry.level == 3:  # Table/Figure
+                link_text = f'<link href="#{entry.anchor}">{entry.title}</link>'
+                toc_story.append(Paragraph(link_text, self.toc_table_style))
+        
+        return toc_story
     
     def add_page_number(self, canvas, doc):
         """Add page numbers to the bottom center of each page."""
@@ -589,7 +588,9 @@ class EnhancedPDFReportGenerator:
         )
         template = PageTemplate(id='with-footer', frames=frame, onPage=self.add_page_number)
         doc.addPageTemplates([template])
-        story = []
+        
+        # Build the complete story with proper TOC placement
+        complete_story = []
         
         # Enhanced Cover Page
         counties_str = " and ".join(self.counties)
@@ -598,19 +599,20 @@ class EnhancedPDFReportGenerator:
         if os.path.exists(logo_path):
             from reportlab.platypus import Image
             logo_img = Image(logo_path, width=2.8*inch, height=1*inch)
-            story.append(logo_img)
-            story.append(Spacer(1, 20))
+            complete_story.append(logo_img)
+            complete_story.append(Spacer(1, 20))
         else:
-            story.append(Paragraph("[NCRC LOGO]", self.subtitle_style))
-            story.append(Spacer(1, 20))
+            complete_story.append(Paragraph("[NCRC LOGO]", self.subtitle_style))
+            complete_story.append(Spacer(1, 20))
         # Title with line breaks
         title_text = f"{counties_str}<br/>Bank Branch Trends<br/>({years_str})"
-        story.append(Paragraph(title_text, self.title_style))
-        story.append(Spacer(1, 40))
-        story.append(Paragraph("AI-Powered Banking Market Intelligence", self.subtitle_style))
-        story.append(Spacer(1, 30))
-        story.append(Paragraph(f"Report Generated: {datetime.now().strftime('%B %d, %Y')}", self.body_style))
-        story.append(PageBreak())
+        complete_story.append(Paragraph(title_text, self.title_style))
+        complete_story.append(Spacer(1, 40))
+        complete_story.append(Paragraph("AI-Powered Banking Market Intelligence", self.subtitle_style))
+        complete_story.append(Spacer(1, 30))
+        complete_story.append(Paragraph(f"Report Generated: {datetime.now().strftime('%B %d, %Y')}", self.body_style))
+        complete_story.append(PageBreak())
+        self.current_page += 1  # Cover page is page 1
         
         # Calculate all enhanced data
         trends = self.calculate_enhanced_trends()
@@ -633,46 +635,56 @@ class EnhancedPDFReportGenerator:
                     county_bank_analysis,
                     county_comparisons
                 )
+                
                 # Executive Summary Section
-                story.append(PageBreak())
-                story.append(Paragraph("Executive Summary", self.section_style))
+                complete_story.append(PageBreak())
+                self.current_page += 1
+                self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{county}")
+                complete_story.append(Paragraph(f'<a name="exec_summary_{county}">Executive Summary</a>', self.section_style))
                 if ai_analysis['executive_summary']:
-                    story.extend(self.format_ai_content(ai_analysis['executive_summary']))
-                story.append(Spacer(1, 20))
+                    complete_story.extend(self.format_ai_content(ai_analysis['executive_summary']))
+                complete_story.append(Spacer(1, 20))
                 
                 # Key Findings Section
-                story.append(PageBreak())
-                story.append(Paragraph("Key Findings", self.section_style))
+                complete_story.append(PageBreak())
+                self.current_page += 1
+                self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{county}")
+                complete_story.append(Paragraph(f'<a name="key_findings_{county}">Key Findings</a>', self.section_style))
                 if ai_analysis['key_findings']:
-                    story.extend(self.format_key_findings(ai_analysis['key_findings']))
-                story.append(Spacer(1, 20))
+                    complete_story.extend(self.format_key_findings(ai_analysis['key_findings']))
+                complete_story.append(Spacer(1, 20))
                 
                 # Understanding the Data Section
-                story.append(PageBreak())
-                story.append(Paragraph("Understanding the Data", self.section_style))
-                story.append(Paragraph(
+                complete_story.append(PageBreak())
+                self.current_page += 1
+                self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{county}")
+                complete_story.append(Paragraph(f'<a name="data_understanding_{county}">Understanding the Data</a>', self.section_style))
+                complete_story.append(Paragraph(
                     f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
                     f"We focus on three key metrics:",
                     self.body_style
                 ))
-                story.append(Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style))
-                story.append(Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style))
-                story.append(Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style))
-                story.append(Paragraph(
+                complete_story.append(Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style))
+                complete_story.append(Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style))
+                complete_story.append(Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style))
+                complete_story.append(Paragraph(
                     f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
                     f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
                     self.body_style
                 ))
-                story.append(Spacer(1, 20))
+                complete_story.append(Spacer(1, 20))
                 
                 # Overall Branch Trends Section
-                story.append(PageBreak())
-                story.append(Paragraph("Overall Branch Trends", self.section_style))
+                complete_story.append(PageBreak())
+                self.current_page += 1
+                self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{county}")
+                complete_story.append(Paragraph(f'<a name="branch_trends_{county}">Overall Branch Trends</a>', self.section_style))
                 if ai_analysis['overall_trends']:
-                    story.extend(self.format_ai_content(ai_analysis['overall_trends']))
-                    story.append(Spacer(1, 20))
+                    complete_story.extend(self.format_ai_content(ai_analysis['overall_trends']))
+                    complete_story.append(Spacer(1, 20))
                 if not county_trends.empty:
-                    story.append(Paragraph("Detailed Branch Trends Data:", self.subsection_style))
+                    self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{county}")
+                    complete_story.append(Paragraph("Detailed Branch Trends Data:", self.subsection_style))
                     trend_data = []
                     trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
                     for _, row in county_trends.iterrows():
@@ -702,33 +714,38 @@ class EnhancedPDFReportGenerator:
                         ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
                         ('TOPPADDING', (0, 1), (-1, -1), 8),
                     ]))
-                    story.append(KeepTogether([trend_table, Spacer(1, 15)]))
+                    complete_story.append(KeepTogether([trend_table, Spacer(1, 15)]))
+                
                 # Market Concentration Section
-                story.append(PageBreak())
-                story.append(Paragraph("Market Concentration: Largest Banks Analysis", self.section_style))
+                complete_story.append(PageBreak())
+                self.current_page += 1
+                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{county}")
+                complete_story.append(Paragraph(f'<a name="market_concentration_{county}">Market Concentration: Largest Banks Analysis</a>', self.section_style))
                 if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
                     if not top_bank_data.empty:
                         if ai_analysis['bank_strategies']:
-                            story.extend(self.format_ai_content(ai_analysis['bank_strategies']))
-                            story.append(Spacer(1, 15))
+                            complete_story.extend(self.format_ai_content(ai_analysis['bank_strategies']))
+                            complete_story.append(Spacer(1, 15))
                         total_top_branches = top_bank_data['total_branches'].sum()
                         total_county_branches = county_market_shares['total_branches'].sum()
                         top_percentage = (total_top_branches / total_county_branches * 100) if total_county_branches > 0 else 0
                         
                         # Create a more professional summary section
-                        story.append(Spacer(1, 10))
-                        story.append(Paragraph("Market Concentration Summary", self.subsection_style))
-                        story.append(Spacer(1, 5))
-                        story.append(Paragraph(
+                        complete_story.append(Spacer(1, 10))
+                        self.add_toc_entry(f"Market Concentration Summary - {county}", 2, f"market_summary_{county}")
+                        complete_story.append(Paragraph("Market Concentration Summary", self.subsection_style))
+                        complete_story.append(Spacer(1, 5))
+                        complete_story.append(Paragraph(
                             f"As of {max(self.years)}, {len(top_bank_data)} banks control "
                             f"{self.format_percentage(top_percentage)} of all branches in {county}, operating "
                             f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
                             f"This represents a {len(top_bank_data)}-bank oligopoly in the county's banking sector.",
                             self.summary_box_style
                         ))
-                        story.append(Spacer(1, 15))
-                        story.append(Paragraph("Top Banks Market Share Data:", self.subsection_style))
+                        complete_story.append(Spacer(1, 15))
+                        self.add_toc_entry(f"Top Banks Market Share Data - {county}", 2, f"market_share_table_{county}")
+                        complete_story.append(Paragraph("Top Banks Market Share Data:", self.subsection_style))
                         bank_table_data = []
                         bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
                         for _, row in top_bank_data.iterrows():
@@ -764,9 +781,10 @@ class EnhancedPDFReportGenerator:
                             ('TOPPADDING', (0, 1), (-1, -1), 8),
                             ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                         ]))
-                        story.append(KeepTogether([bank_table, Spacer(1, 15)]))
+                        complete_story.append(KeepTogether([bank_table, Spacer(1, 15)]))
                         if not county_bank_analysis.empty:
-                            story.append(Paragraph(
+                            self.add_toc_entry(f"Growth Analysis - {county}", 2, f"growth_analysis_{county}")
+                            complete_story.append(Paragraph(
                                 f"<b>Growth Analysis:</b> The following table shows how the branch counts for these top banks "
                                 f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:",
                                 self.body_style
@@ -805,12 +823,13 @@ class EnhancedPDFReportGenerator:
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
                                 ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            story.append(KeepTogether([growth_table, Spacer(1, 15)]))
+                            complete_story.append(KeepTogether([growth_table, Spacer(1, 15)]))
                         if county in bank_analysis and not bank_analysis[county].empty:
                             if ai_analysis['community_impact']:
-                                story.extend(self.format_ai_content(ai_analysis['community_impact']))
-                                story.append(Spacer(1, 15))
-                            story.append(Paragraph("Community Impact Comparison Data:", self.subsection_style))
+                                complete_story.extend(self.format_ai_content(ai_analysis['community_impact']))
+                                complete_story.append(Spacer(1, 15))
+                            self.add_toc_entry(f"Community Impact Comparison Data - {county}", 2, f"community_impact_table_{county}")
+                            complete_story.append(Paragraph("Community Impact Comparison Data:", self.subsection_style))
                             comparison_data = []
                             comparison_data.append(['Bank', 'LMI %', 'MMCT %', 'Both %', 'LMI vs\nAvg', 'MMCT vs\nAvg'])
                             for _, row in bank_analysis[county].iterrows():
@@ -853,19 +872,22 @@ class EnhancedPDFReportGenerator:
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
                                 ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            story.append(KeepTogether([comparison_table, Spacer(1, 15)]))
+                            complete_story.append(KeepTogether([comparison_table, Spacer(1, 15)]))
+                
                 # Conclusion Section
-                story.append(PageBreak())
-                story.append(Paragraph("Conclusion and Strategic Implications", self.section_style))
+                complete_story.append(PageBreak())
+                self.current_page += 1
+                self.add_toc_entry(f"Conclusion and Strategic Implications - {county}", 1, f"conclusion_{county}")
+                complete_story.append(Paragraph(f'<a name="conclusion_{county}">Conclusion and Strategic Implications</a>', self.section_style))
                 if ai_analysis['conclusion']:
-                    story.extend(self.format_ai_content(ai_analysis['conclusion']))
+                    complete_story.extend(self.format_ai_content(ai_analysis['conclusion']))
                 else:
                     if not county_trends.empty:
                         first_year_total = county_trends['total_branches'].iloc[0]
                         last_year_total = county_trends['total_branches'].iloc[-1]
                         total_change = last_year_total - first_year_total
                         change_direction = "declined" if total_change < 0 else "increased" if total_change > 0 else "remained stable"
-                        story.append(Paragraph(
+                        complete_story.append(Paragraph(
                             f"In summary, {county} experienced a {change_direction} in bank branches from {self.years[0]} to {self.years[-1]}, "
                             f"changing from {self.format_number(first_year_total)} to {self.format_number(last_year_total)} branches. "
                             f"These trends reflect the evolving landscape of banking in {county}: a more consolidated branch network "
@@ -873,10 +895,13 @@ class EnhancedPDFReportGenerator:
                             f"to serving diverse and underserved communities.",
                             self.body_style
                         ))
+        
         # Methodology and Technical Notes Section
-        story.append(PageBreak())
-        story.append(Paragraph("Methodology and Technical Notes", self.section_style))
-        story.append(Paragraph(
+        complete_story.append(PageBreak())
+        self.current_page += 1
+        self.add_toc_entry("Methodology and Technical Notes", 1, "methodology")
+        complete_story.append(Paragraph('<a name="methodology">Methodology and Technical Notes</a>', self.section_style))
+        complete_story.append(Paragraph(
             f"<b>Analysis Period:</b> {years_str}<br/>"
             f"<b>Geographic Scope:</b> {counties_str}<br/>"
             f"<b>Report Generated:</b> {datetime.now().strftime('%B %d, %Y at %I:%M %p')}<br/>"
@@ -885,8 +910,8 @@ class EnhancedPDFReportGenerator:
             f"<b>Report Type:</b> Comprehensive Market Analysis",
             self.body_style
         ))
-        story.append(Spacer(1, 15))
-        story.append(Paragraph(
+        complete_story.append(Spacer(1, 15))
+        complete_story.append(Paragraph(
             f"This analysis examines bank branch trends using FDIC Summary of Deposits data. "
             f"The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, "
             f"and the percentage of branches in Majority-Minority Census Tracts (MMCT). We identify the largest banks by market share "
@@ -894,8 +919,8 @@ class EnhancedPDFReportGenerator:
             f"AI-powered insights using {self.ai_analyzer.provider.upper()} for deeper interpretation of trends and strategic implications.",
             self.body_style
         ))
-        story.append(Spacer(1, 15))
-        story.append(Paragraph(
+        complete_story.append(Spacer(1, 15))
+        complete_story.append(Paragraph(
             "<b>Data Definitions:</b><br/>"
             "• <b>LMICT:</b> Low-to-Moderate Income Census Tracts - areas with median family income below 80% of the area median income<br/>"
             "• <b>MMCT:</b> Majority-Minority Census Tracts - areas where minority populations represent more than 50% of the total population<br/>"
@@ -903,10 +928,35 @@ class EnhancedPDFReportGenerator:
             "• <b>Market Share:</b> Percentage of total branches in the county controlled by each bank",
             self.body_style
         ))
-        doc.build(story)
+        
+        # Now insert the TOC page after the cover page
+        toc_story = self.create_toc_page()
+        
+        # Build the final story with TOC inserted at the right place
+        final_story = []
+        
+        # Find the cover page elements (first few items)
+        cover_page_end = 0
+        for i, item in enumerate(complete_story):
+            if hasattr(item, 'tag') and item.tag == 'PageBreak':
+                cover_page_end = i + 1
+                break
+        
+        # Add cover page
+        final_story.extend(complete_story[:cover_page_end])
+        
+        # Add TOC page after cover page
+        final_story.extend(toc_story)
+        final_story.append(PageBreak())
+        
+        # Add all remaining content
+        final_story.extend(complete_story[cover_page_end:])
+        
+        doc.build(final_story)
         print(f"✅ AI-powered PDF report generated successfully: {output_path}")
         print(f"   - AI provided narrative text only")
         print(f"   - Python handled all tables, charts, and formatting")
+        print(f"   - Dynamic table of contents with {len(self.toc_entries)} entries")
 
 
 def generate_pdf_report_from_data(data: pd.DataFrame, counties: List[str], years: List[int], output_path: str, ai_sections: Dict[str, str] = None):

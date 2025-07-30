@@ -244,6 +244,19 @@ body {
     transform: none;
 }
 
+.submit-info {
+    display: block;
+    text-align: center;
+    margin-top: 10px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.submit-info i {
+    margin-right: 5px;
+    color: #667eea;
+}
+
 /* Progress Section */
 .progress-section {
     margin-top: 30px;
@@ -287,18 +300,30 @@ body {
     border-radius: 4px;
     transition: width 0.3s ease;
     width: 0%;
-    animation: progress-animation 2s ease-in-out infinite;
-}
-
-@keyframes progress-animation {
-    0% { width: 0%; }
-    50% { width: 70%; }
-    100% { width: 100%; }
 }
 
 .progress-text {
     color: #666;
     font-weight: 500;
+}
+
+.progress-info {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 8px;
+    border-left: 3px solid #667eea;
+}
+
+.progress-info i {
+    color: #667eea;
+    margin-right: 8px;
+}
+
+.progress-info small {
+    color: #555;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
 /* Results Section */

@@ -36,13 +36,14 @@ def convert_dataframe_to_json_serializable(data: Any) -> Any:
 class TrackedAIAnalyzer:
     """AI Analyzer wrapper that tracks usage for logging."""
     
-    def __init__(self, run_id: str):
+    def __init__(self, run_id: str, progress_tracker=None):
         """Initialize the tracked AI analyzer."""
         self.run_id = run_id
         self.analyzer = AIAnalyzer()
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.call_count = 0
+        self.progress_tracker = progress_tracker
         
         # Update run metadata with AI provider info
         run_logger.update_run(
@@ -51,7 +52,7 @@ class TrackedAIAnalyzer:
             ai_model=CLAUDE_MODEL if AI_PROVIDER == "claude" else GPT_MODEL
         )
     
-    def _call_ai_with_tracking(self, prompt: str, max_tokens: int = 1000, temperature: float = 0.3) -> str:
+    def _call_ai_with_tracking(self, prompt: str, max_tokens: int = 1000, temperature: float = 0.3, call_index: int = None, total_calls: int = None) -> str:
         """Make an AI call and track token usage."""
         try:
             # Make the actual AI call
@@ -65,6 +66,10 @@ class TrackedAIAnalyzer:
             self.total_input_tokens += int(input_tokens)
             self.total_output_tokens += int(output_tokens)
             self.call_count += 1
+            
+            # Update progress if tracker is available
+            if self.progress_tracker and call_index is not None and total_calls is not None:
+                self.progress_tracker.update_ai_progress(call_index + 1, total_calls)
             
             # Update run metadata
             run_logger.update_run(
@@ -96,7 +101,7 @@ class TrackedAIAnalyzer:
         Please provide a concise executive summary highlighting key trends and insights.
         """
         
-        return self._call_ai_with_tracking(prompt, max_tokens=800)
+        return self._call_ai_with_tracking(prompt, max_tokens=800, call_index=0, total_calls=6)
     
     def generate_key_findings(self, data: Dict[str, Any]) -> str:
         """Generate key findings with tracking."""
@@ -115,7 +120,7 @@ class TrackedAIAnalyzer:
         Please provide 3-5 key findings about market trends, bank strategies, and community impact.
         """
         
-        return self._call_ai_with_tracking(prompt, max_tokens=600)
+        return self._call_ai_with_tracking(prompt, max_tokens=600, call_index=1, total_calls=6)
     
     def generate_trends_analysis(self, data: Dict[str, Any]) -> str:
         """Generate trends analysis with tracking."""
@@ -132,7 +137,7 @@ class TrackedAIAnalyzer:
         Please provide insights about year-over-year changes, market consolidation, and strategic implications.
         """
         
-        return self._call_ai_with_tracking(prompt, max_tokens=700)
+        return self._call_ai_with_tracking(prompt, max_tokens=700, call_index=2, total_calls=6)
     
     def generate_bank_strategies_analysis(self, data: Dict[str, Any]) -> str:
         """Generate bank strategies analysis with tracking."""
@@ -150,7 +155,7 @@ class TrackedAIAnalyzer:
         Please provide insights about individual bank strategies, market positioning, and competitive dynamics.
         """
         
-        return self._call_ai_with_tracking(prompt, max_tokens=700)
+        return self._call_ai_with_tracking(prompt, max_tokens=700, call_index=3, total_calls=6)
     
     def generate_community_impact_analysis(self, data: Dict[str, Any]) -> str:
         """Generate community impact analysis with tracking."""
@@ -167,7 +172,7 @@ class TrackedAIAnalyzer:
         Please provide insights about financial inclusion, community reinvestment, and access to banking services.
         """
         
-        return self._call_ai_with_tracking(prompt, max_tokens=700)
+        return self._call_ai_with_tracking(prompt, max_tokens=700, call_index=4, total_calls=6)
     
     def generate_conclusion(self, data: Dict[str, Any]) -> str:
         """Generate conclusion with tracking."""
@@ -186,7 +191,7 @@ class TrackedAIAnalyzer:
         Please synthesize the key insights and provide strategic recommendations.
         """
         
-        return self._call_ai_with_tracking(prompt, max_tokens=500)
+        return self._call_ai_with_tracking(prompt, max_tokens=500, call_index=5, total_calls=6)
 
 
 def track_ai_call(run_id: str, prompt: str, max_tokens: int = 1000) -> str:

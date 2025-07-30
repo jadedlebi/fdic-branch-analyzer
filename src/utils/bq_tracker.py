@@ -18,14 +18,15 @@ from google.cloud import bigquery
 class TrackedBigQueryClient:
     """BigQuery client wrapper that tracks usage for logging."""
     
-    def __init__(self, run_id: str):
+    def __init__(self, run_id: str, progress_tracker=None):
         """Initialize the tracked BigQuery client."""
         self.run_id = run_id
         self.client = get_bigquery_client()
         self.total_queries = 0
         self.total_bytes_processed = 0
+        self.progress_tracker = progress_tracker
         
-    def execute_query(self, sql_template: str, county: str, year: int) -> List[Dict[str, Any]]:
+    def execute_query(self, sql_template: str, county: str, year: int, query_index: int = None, total_queries: int = None) -> List[Dict[str, Any]]:
         """Execute a BigQuery query and track usage."""
         try:
             # Find the exact county match
@@ -54,6 +55,10 @@ class TrackedBigQueryClient:
             # Update tracking
             self.total_queries += 1
             self.total_bytes_processed += total_bytes_processed
+            
+            # Update progress if tracker is available
+            if self.progress_tracker and query_index is not None and total_queries is not None:
+                self.progress_tracker.update_query_progress(query_index + 1, total_queries)
             
             # Update run metadata
             run_logger.update_run(

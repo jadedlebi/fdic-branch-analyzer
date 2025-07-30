@@ -8,20 +8,8 @@ const progressText = document.getElementById('progressText');
 const downloadBtn = document.getElementById('downloadBtn');
 const errorMessage = document.getElementById('errorMessage');
 
-// Progress messages
-const progressMessages = [
-    'Initializing analysis...',
-    'Connecting to database...',
-    'Querying branch data...',
-    'Processing county information...',
-    'Generating AI insights...',
-    'Creating Excel report...',
-    'Generating PDF report...',
-    'Finalizing analysis...'
-];
-
+// Real-time progress tracking
 let currentProgress = 0;
-let progressInterval;
 
 // Form submission handler
 analysisForm.addEventListener('submit', async function(e) {
@@ -100,23 +88,14 @@ function showProgress() {
     resultsSection.style.display = 'none';
     errorSection.style.display = 'none';
     
-    // Start progress animation
-    startProgressAnimation();
+    // Initialize progress bar
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('progressText').textContent = 'Initializing analysis...';
 }
 
 // Hide progress section
 function hideProgress() {
     progressSection.style.display = 'none';
-    clearInterval(progressInterval);
-}
-
-// Start progress animation
-function startProgressAnimation() {
-    currentProgress = 0;
-    progressInterval = setInterval(() => {
-        currentProgress = (currentProgress + 1) % progressMessages.length;
-        progressText.textContent = progressMessages[currentProgress];
-    }, 1500);
 }
 
 // Show results section

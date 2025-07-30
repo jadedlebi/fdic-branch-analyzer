@@ -29,7 +29,8 @@ from config import config
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this')
 
-job_progress = {}  # job_id: {"step": str, "percent": int, "done": bool, "error": str or None}
+# Import progress tracking
+from src.utils.progress_tracker import get_progress, update_progress, create_progress_tracker
 
 @app.route('/')
 def index():
@@ -41,7 +42,7 @@ def progress(job_id):
     def event_stream():
         last_percent = -1
         while True:
-            progress = job_progress.get(job_id, {})
+            progress = get_progress(job_id)
             percent = progress.get("percent", 0)
             step = progress.get("step", "Starting...")
             done = progress.get("done", False)
@@ -62,7 +63,8 @@ def analyze():
         counties = data.get('counties', '').strip()
         years = data.get('years', '').strip()
         job_id = str(uuid.uuid4())
-        job_progress[job_id] = {"step": "Initializing analysis...", "percent": 0, "done": False, "error": None}
+        # Create progress tracker for this job
+        progress_tracker = create_progress_tracker(job_id)
         
         if not counties or not years:
             return jsonify({'error': 'Please provide both counties and years'}), 400
@@ -95,49 +97,25 @@ def analyze():
         
         def run_job():
             try:
-                # Step 1: Connecting to database
-                job_progress[job_id].update({"step": "Connecting to database...", "percent": 10})
-                # No-op: connection is handled in run_analysis
-
-                # Step 2: Querying branch data
-                job_progress[job_id].update({"step": "Querying branch data...", "percent": 30})
-
-                # Step 3: Processing county information
-                job_progress[job_id].update({"step": "Processing county information...", "percent": 50})
-
-                # Step 4: Generating AI insights
-                job_progress[job_id].update({"step": "Generating AI insights...", "percent": 70})
-
-                # Step 5: Creating Excel report
-                job_progress[job_id].update({"step": "Creating Excel report...", "percent": 85})
-
-                # Step 6: Generating PDF report
-                job_progress[job_id].update({"step": "Generating PDF report...", "percent": 95})
-
-                # Actually run the analysis pipeline
-                result = run_analysis(counties, years, run_id)
+                # Run the analysis pipeline with progress tracking
+                result = run_analysis(counties, years, run_id, progress_tracker)
 
                 if not result.get('success'):
                     error_msg = result.get('error', 'Unknown error')
-                    job_progress[job_id].update({"error": error_msg, "done": True})
                     # Log the failed run
                     run_logger.end_run(run_id, success=False, error_message=error_msg)
                     return
 
-                # Step 7: Finalizing
-                job_progress[job_id].update({"step": "Finalizing analysis...", "percent": 100, "done": True})
-                
                 # Log the successful run
                 run_logger.end_run(run_id, success=True)
             except Exception as e:
                 error_msg = str(e)
-                job_progress[job_id].update({"error": error_msg, "done": True})
                 # Log the failed run
                 run_logger.end_run(run_id, success=False, error_message=error_msg)
 
         threading.Thread(target=run_job).start()
 
-        return jsonify({"job_id": job_id})
+        return jsonify({'success': True, 'job_id': job_id})
             
     except Exception as e:
         return jsonify({

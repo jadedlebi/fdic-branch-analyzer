@@ -132,11 +132,18 @@ def prepare_data_for_pdf(raw_data: pd.DataFrame) -> pd.DataFrame:
     return raw_data
 
 
-def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
+def run_analysis(counties_str: str, years_str: str, run_id: str = None, progress_tracker=None) -> Dict:
     """Run analysis for web interface. Returns a dictionary with success/error status."""
     try:
+        # Initialize progress
+        if progress_tracker:
+            progress_tracker.update_progress('initializing')
+        
         # Parse parameters
         counties, years = parse_web_parameters(counties_str, years_str)
+        
+        if progress_tracker:
+            progress_tracker.update_progress('parsing_params')
         
         if not counties:
             return {'success': False, 'error': 'No counties provided'}
@@ -145,6 +152,9 @@ def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
             return {'success': False, 'error': 'No years provided'}
         
         # Clarify county selections automatically
+        if progress_tracker:
+            progress_tracker.update_progress('clarifying_counties')
+        
         clarified_counties = []
         for county in counties:
             try:
@@ -154,21 +164,30 @@ def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
                 return {'success': False, 'error': str(e)}
         
         # Execute BigQuery queries with tracking if run_id provided
+        if progress_tracker:
+            progress_tracker.update_progress('connecting_bq')
+        
         sql_template = load_sql_template()
         all_results = []
         
         if run_id:
             # Use tracked BigQuery client
             from src.utils.bq_tracker import TrackedBigQueryClient
-            bq_client = TrackedBigQueryClient(run_id)
+            bq_client = TrackedBigQueryClient(run_id, progress_tracker)
+            
+            # Calculate total queries for progress tracking
+            total_queries = len(clarified_counties) * len(years)
+            query_index = 0
             
             for county in clarified_counties:
                 for year in years:
                     try:
-                        results = bq_client.execute_query(sql_template, county, year)
+                        results = bq_client.execute_query(sql_template, county, year, query_index, total_queries)
                         all_results.extend(results)
+                        query_index += 1
                     except Exception as e:
                         print(f"Error querying {county} {year}: {e}")
+                        query_index += 1
                         continue
         else:
             # Use regular BigQuery client
@@ -185,6 +204,9 @@ def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
             return {'success': False, 'error': 'No data found for the specified parameters'}
         
         # Build and save report
+        if progress_tracker:
+            progress_tracker.update_progress('building_report')
+        
         report_data = build_report(all_results, clarified_counties, years)
         
         # Save Excel report with standard filename
@@ -197,6 +219,9 @@ def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
             run_logger.update_run(run_id, excel_file=excel_path)
         
         # Prepare data for PDF generation
+        if progress_tracker:
+            progress_tracker.update_progress('preparing_pdf')
+        
         pdf_data = prepare_data_for_pdf(report_data['raw_data'])
         
         # Generate PDF report with AI analysis if run_id provided
@@ -205,7 +230,7 @@ def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
         if run_id:
             # Use tracked AI analyzer
             from src.analysis.ai_tracker import TrackedAIAnalyzer
-            ai_analyzer = TrackedAIAnalyzer(run_id)
+            ai_analyzer = TrackedAIAnalyzer(run_id, progress_tracker)
             
             # Create data dictionary with DataFrame and metadata for AI analysis
             ai_data = {
@@ -217,6 +242,9 @@ def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
             }
             
             # Generate AI analysis sections
+            if progress_tracker:
+                progress_tracker.update_progress('generating_ai')
+            
             ai_sections = {
                 'executive_summary': ai_analyzer.generate_executive_summary(ai_data),
                 'key_findings': ai_analyzer.generate_key_findings(ai_data),
@@ -227,14 +255,24 @@ def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
             }
             
             # Generate PDF with AI analysis
+            if progress_tracker:
+                progress_tracker.update_progress('creating_pdf')
+            
             generate_pdf_report_from_data(pdf_data, clarified_counties, years, pdf_path, ai_sections)
         else:
             # Generate PDF without AI analysis
+            if progress_tracker:
+                progress_tracker.update_progress('creating_pdf')
+            
             generate_pdf_report_from_data(pdf_data, clarified_counties, years, pdf_path)
         
         # Update run metadata with PDF file path
         if run_id:
             run_logger.update_run(run_id, pdf_file=pdf_path)
+        
+        # Mark as completed
+        if progress_tracker:
+            progress_tracker.complete(success=True)
         
         return {
             'success': True,
@@ -245,6 +283,8 @@ def run_analysis(counties_str: str, years_str: str, run_id: str = None) -> Dict:
         }
         
     except Exception as e:
+        if progress_tracker:
+            progress_tracker.complete(success=False, error=str(e))
         return {'success': False, 'error': f'Analysis failed: {str(e)}'}
 
 
