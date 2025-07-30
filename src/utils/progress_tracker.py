@@ -73,7 +73,13 @@ class ProgressTracker:
     def complete(self, success: bool = True, error: Optional[str] = None):
         """Mark the analysis as completed."""
         if success:
-            self.update_progress('completed', 100, 'Analysis completed!')
+            if self.progress_callback:
+                self.progress_callback(self.job_id, {
+                    'step': 'Analysis completed!',
+                    'percent': 100,
+                    'done': True,
+                    'error': None
+                })
         else:
             if self.progress_callback:
                 self.progress_callback(self.job_id, {
