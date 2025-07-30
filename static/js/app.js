@@ -29,15 +29,38 @@ analysisForm.addEventListener('submit', async function(e) {
     
     const formData = new FormData(analysisForm);
     const selectedCounties = $('#county-select').val(); // This is an array
-    const years = formData.get('years').trim();
+    const startYear = formData.get('startYear');
+    const endYear = formData.get('endYear');
     
-    if (!selectedCounties || !years) {
-        showError('Please fill in both counties and years fields.');
+    if (!selectedCounties || !startYear || !endYear) {
+        showError('Please fill in all required fields.');
         return;
+    }
+    
+    // Validate year range (minimum 3 years)
+    const start = parseInt(startYear);
+    const end = parseInt(endYear);
+    const yearRange = end - start + 1;
+    
+    if (yearRange < 3) {
+        showError('Please select a range of at least 3 years.');
+        return;
+    }
+    
+    if (start > end) {
+        showError('Start year must be before or equal to end year.');
+        return;
+    }
+    
+    // Generate years array from range
+    const years = [];
+    for (let year = start; year <= end; year++) {
+        years.push(year);
     }
     
     // Convert to string if needed
     const countiesString = selectedCounties.join(';');
+    const yearsString = years.join(',');
     
     // Show progress and disable form
     showProgress();
@@ -51,7 +74,7 @@ analysisForm.addEventListener('submit', async function(e) {
             },
             body: JSON.stringify({
                 counties: countiesString,
-                years: years
+                years: yearsString
             })
         });
         
@@ -122,8 +145,8 @@ function disableForm() {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Processing...</span>';
     
-    // Disable inputs
-    const inputs = analysisForm.querySelectorAll('input');
+    // Disable inputs and selects
+    const inputs = analysisForm.querySelectorAll('input, select');
     inputs.forEach(input => input.disabled = true);
 }
 
@@ -132,8 +155,8 @@ function enableForm() {
     submitBtn.disabled = false;
     submitBtn.innerHTML = '<i class="fas fa-magic"></i><span>Generate Analysis</span>';
     
-    // Enable inputs
-    const inputs = analysisForm.querySelectorAll('input');
+    // Enable inputs and selects
+    const inputs = analysisForm.querySelectorAll('input, select');
     inputs.forEach(input => input.disabled = false);
 }
 
@@ -159,22 +182,33 @@ function validateInput(input, type) {
         } else {
             input.setCustomValidity('');
         }
-    } else if (type === 'years') {
+    } else if (type === 'startYear' || type === 'endYear') {
         if (!value) {
-            input.setCustomValidity('Please enter years to analyze.');
-        } else if (value.toLowerCase() === 'all') {
-            input.setCustomValidity('');
+            input.setCustomValidity('Please select a year.');
         } else {
-            const years = value.split(',').map(y => y.trim()).filter(y => y);
-            const validYears = years.every(y => {
-                const year = parseInt(y);
-                return !isNaN(year) && year >= 2017 && year <= 2024;
-            });
-            
-            if (!validYears) {
-                input.setCustomValidity('Please enter valid years between 2017-2024, separated by commas.');
+            const year = parseInt(value);
+            if (isNaN(year) || year < 2017 || year > 2024) {
+                input.setCustomValidity('Please select a valid year between 2017-2024.');
             } else {
-                input.setCustomValidity('');
+                // Check if the range is at least 3 years
+                const startYear = document.getElementById('startYear').value;
+                const endYear = document.getElementById('endYear').value;
+                
+                if (startYear && endYear) {
+                    const start = parseInt(startYear);
+                    const end = parseInt(endYear);
+                    const yearRange = end - start + 1;
+                    
+                    if (yearRange < 3) {
+                        input.setCustomValidity('Please select a range of at least 3 years.');
+                    } else if (start > end) {
+                        input.setCustomValidity('Start year must be before or equal to end year.');
+                    } else {
+                        input.setCustomValidity('');
+                    }
+                } else {
+                    input.setCustomValidity('');
+                }
             }
         }
     }
@@ -185,8 +219,22 @@ document.getElementById('county-select').addEventListener('change', function() {
     validateInput(this, 'county-select');
 });
 
-document.getElementById('years').addEventListener('input', function() {
-    validateInput(this, 'years');
+document.getElementById('startYear').addEventListener('change', function() {
+    validateInput(this, 'startYear');
+    // Also validate end year when start year changes
+    const endYearInput = document.getElementById('endYear');
+    if (endYearInput.value) {
+        validateInput(endYearInput, 'endYear');
+    }
+});
+
+document.getElementById('endYear').addEventListener('change', function() {
+    validateInput(this, 'endYear');
+    // Also validate start year when end year changes
+    const startYearInput = document.getElementById('startYear');
+    if (startYearInput.value) {
+        validateInput(startYearInput, 'startYear');
+    }
 });
 
 // Add some nice animations and interactions

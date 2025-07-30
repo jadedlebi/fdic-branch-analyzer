@@ -1,10 +1,16 @@
 # FDIC Branch Analyzer
 
-AI-powered banking market intelligence platform for analyzing FDIC branch data with comprehensive insights and professional reporting.
+A comprehensive banking market intelligence platform that analyzes FDIC Summary of Deposits (SOD) data to provide detailed insights into branch networks, market share dynamics, and banking trends across counties and time periods.
 
-## 🌟 Live Demo
+## 🎯 Purpose
 
-**Visit the live application [here](https://fdic-analyzer-892833260112.us-east1.run.app/)!**
+This tool is designed for banking analysts, researchers, and policymakers to:
+
+- **Analyze Branch Networks**: Track branch presence, closures, and openings across geographic markets
+- **Calculate Market Share**: Determine bank market dominance and competitive positioning
+- **Identify Trends**: Spot patterns in banking consolidation, expansion, and strategic shifts
+- **Generate Professional Reports**: Create Excel and PDF reports with AI-powered insights
+- **Support Policy Analysis**: Provide data-driven insights for community reinvestment and banking policy research
 
 ## 🚀 Quick Start
 
@@ -20,20 +26,27 @@ AI-powered banking market intelligence platform for analyzing FDIC branch data w
 
 4. **Download Reports**: Get a ZIP file containing Excel and PDF reports
 
-## 📊 What You'll Get
+## 📊 Analysis Capabilities
 
-### Excel Report
-- Raw branch data with detailed statistics
-- Market share calculations
-- Year-over-year comparisons
-- Bank rankings and analysis
+### Data Analysis
+- **Branch Statistics**: Total branches, closures, openings, and net changes
+- **Market Share Calculations**: Bank dominance and competitive positioning
+- **Year-over-Year Comparisons**: Growth trends and market evolution
+- **Bank Rankings**: Top players by branch count and market share
+- **Geographic Coverage**: Multi-county analysis with comparative insights
 
-### PDF Report
-- Executive summary with key findings
-- AI-generated insights and analysis
-- Professional charts and tables
-- Strategic recommendations
-- Market dynamics overview
+### AI-Powered Insights
+- **Executive Summaries**: Key findings and market overview
+- **Trend Analysis**: Banking consolidation and expansion patterns
+- **Strategic Insights**: Bank strategies and competitive dynamics
+- **Community Impact**: Effects on local banking access and competition
+- **Policy Implications**: Regulatory and community reinvestment considerations
+
+### Professional Reporting
+- **Excel Reports**: Raw data with detailed statistics and calculations
+- **PDF Reports**: Executive summaries with charts, tables, and narrative analysis
+- **Visual Analytics**: Charts showing trends, market share, and comparisons
+- **Comprehensive Coverage**: All FDIC-regulated institutions and branches
 
 ## 🏗️ Project Structure
 
@@ -150,7 +163,6 @@ This project is developed by NCRC (National Community Reinvestment Coalition) fo
 
 ## 🔗 Links
 
-- [Live Application](https://jadedlebi.github.io/fdic-branch-analyzer/)
 - [GitHub Repository](https://github.com/jadedlebi/fdic-branch-analyzer)
 - [NCRC Website](https://ncrc.org)
 - [Issues & Support](https://github.com/jadedlebi/fdic-branch-analyzer/issues)

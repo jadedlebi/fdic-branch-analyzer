@@ -7,10 +7,18 @@ import traceback
 from src.core.main import run_analysis
 import sys
 from src.utils.county_reference import get_all_counties
+from src.utils.run_logger import run_logger, get_user_info
 import uuid
 import threading
 import time
 import json
+
+# Set up Google Cloud credentials for BigQuery logging
+try:
+    from scripts.setup_gcp_credentials import setup_environment
+    setup_environment()
+except ImportError:
+    print("Warning: Could not set up GCP credentials for logging")
 
 # Add the current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -59,9 +67,31 @@ def analyze():
         if not counties or not years:
             return jsonify({'error': 'Please provide both counties and years'}), 400
         
+        # Get user information for logging
+        user_info = get_user_info(request)
+        
+        # Parse counties and years for logging
+        counties_list = [c.strip() for c in counties.split(';') if c.strip()]
+        years_list = []
+        if years.lower() == 'all':
+            years_list = list(range(2017, 2025))
+        else:
+            years_list = [int(y.strip()) for y in years.split(',') if y.strip().isdigit()]
+        
+        # Start run logging
+        run_id = run_logger.start_run(
+            counties=counties_list,
+            years=years_list,
+            interface_type="web",
+            user_ip=user_info.get('ip'),
+            user_agent=user_info.get('user_agent'),
+            session_id=session.get('session_id', str(uuid.uuid4()))
+        )
+        
         # Store in session for download
         session['counties'] = counties
         session['years'] = years
+        session['run_id'] = run_id
         
         def run_job():
             try:
@@ -85,16 +115,25 @@ def analyze():
                 job_progress[job_id].update({"step": "Generating PDF report...", "percent": 95})
 
                 # Actually run the analysis pipeline
-                result = run_analysis(counties, years)
+                result = run_analysis(counties, years, run_id)
 
                 if not result.get('success'):
-                    job_progress[job_id].update({"error": result.get('error', 'Unknown error'), "done": True})
+                    error_msg = result.get('error', 'Unknown error')
+                    job_progress[job_id].update({"error": error_msg, "done": True})
+                    # Log the failed run
+                    run_logger.end_run(run_id, success=False, error_message=error_msg)
                     return
 
                 # Step 7: Finalizing
                 job_progress[job_id].update({"step": "Finalizing analysis...", "percent": 100, "done": True})
+                
+                # Log the successful run
+                run_logger.end_run(run_id, success=True)
             except Exception as e:
-                job_progress[job_id].update({"error": str(e), "done": True})
+                error_msg = str(e)
+                job_progress[job_id].update({"error": error_msg, "done": True})
+                # Log the failed run
+                run_logger.end_run(run_id, success=False, error_message=error_msg)
 
         threading.Thread(target=run_job).start()
 
@@ -183,4 +222,4 @@ def counties():
     return jsonify(counties)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=8080) 
