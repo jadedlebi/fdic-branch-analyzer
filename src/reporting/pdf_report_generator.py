@@ -674,104 +674,105 @@ class EnhancedPDFReportGenerator:
             if county not in trends or county not in market_shares:
                 print(f"Warning: No data available for county: {county}")
                 continue
-                county_trends = trends[county]
-                county_market_shares = market_shares[county]
-                county_bank_analysis = bank_analysis.get(county, pd.DataFrame())
-                county_comparisons = comparisons.get(county, {})
-                ai_analysis = self.generate_enhanced_ai_analysis(
-                    {'county': county},
-                    county_trends,
-                    county_market_shares,
-                    county_bank_analysis,
-                    county_comparisons
-                )
+            
+            county_trends = trends[county]
+            county_market_shares = market_shares[county]
+            county_bank_analysis = bank_analysis.get(county, pd.DataFrame())
+            county_comparisons = comparisons.get(county, {})
+            ai_analysis = self.generate_enhanced_ai_analysis(
+                {'county': county},
+                county_trends,
+                county_market_shares,
+                county_bank_analysis,
+                county_comparisons
+            )
+            
+            # Executive Summary Section
+            complete_story.append(PageBreak())
+            self.current_page += 1
+            self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{county}")
+            complete_story.append(Paragraph(f'<a name="exec_summary_{county}"></a>Executive Summary', self.section_style))
+            if ai_analysis['executive_summary']:
+                complete_story.extend(self.format_ai_content(ai_analysis['executive_summary']))
+            complete_story.append(Spacer(1, 20))
                 
-                # Executive Summary Section
-                complete_story.append(PageBreak())
-                self.current_page += 1
-                self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{county}")
-                complete_story.append(Paragraph(f'<a name="exec_summary_{county}"></a>Executive Summary', self.section_style))
-                if ai_analysis['executive_summary']:
-                    complete_story.extend(self.format_ai_content(ai_analysis['executive_summary']))
+            # Key Findings Section
+            complete_story.append(PageBreak())
+            self.current_page += 1
+            self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{county}")
+            complete_story.append(Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style))
+            if ai_analysis['key_findings']:
+                complete_story.extend(self.format_key_findings(ai_analysis['key_findings']))
+            complete_story.append(Spacer(1, 20))
+            
+            # Understanding the Data Section
+            complete_story.append(PageBreak())
+            self.current_page += 1
+            self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{county}")
+            complete_story.append(Paragraph(f'<a name="data_understanding_{county}"></a>Understanding the Data', self.section_style))
+            complete_story.append(Paragraph(
+                f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
+                f"We focus on three key metrics:",
+                self.body_style
+            ))
+            complete_story.append(Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style))
+            complete_story.append(Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style))
+            complete_story.append(Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style))
+            complete_story.append(Paragraph(
+                f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
+                f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
+                self.body_style
+            ))
+            complete_story.append(Spacer(1, 20))
+            
+            # Overall Branch Trends Section
+            complete_story.append(PageBreak())
+            self.current_page += 1
+            self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{county}")
+            complete_story.append(Paragraph(f'<a name="branch_trends_{county}"></a>Overall Branch Trends', self.section_style))
+            if ai_analysis['overall_trends']:
+                complete_story.extend(self.format_ai_content(ai_analysis['overall_trends']))
                 complete_story.append(Spacer(1, 20))
-                
-                # Key Findings Section
-                complete_story.append(PageBreak())
-                self.current_page += 1
-                self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{county}")
-                complete_story.append(Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style))
-                if ai_analysis['key_findings']:
-                    complete_story.extend(self.format_key_findings(ai_analysis['key_findings']))
-                complete_story.append(Spacer(1, 20))
-                
-                # Understanding the Data Section
-                complete_story.append(PageBreak())
-                self.current_page += 1
-                self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{county}")
-                complete_story.append(Paragraph(f'<a name="data_understanding_{county}"></a>Understanding the Data', self.section_style))
-                complete_story.append(Paragraph(
-                    f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
-                    f"We focus on three key metrics:",
-                    self.body_style
-                ))
-                complete_story.append(Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style))
-                complete_story.append(Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style))
-                complete_story.append(Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style))
-                complete_story.append(Paragraph(
-                    f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
-                    f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
-                    self.body_style
-                ))
-                complete_story.append(Spacer(1, 20))
-                
-                # Overall Branch Trends Section
-                complete_story.append(PageBreak())
-                self.current_page += 1
-                self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{county}")
-                complete_story.append(Paragraph(f'<a name="branch_trends_{county}"></a>Overall Branch Trends', self.section_style))
-                if ai_analysis['overall_trends']:
-                    complete_story.extend(self.format_ai_content(ai_analysis['overall_trends']))
-                    complete_story.append(Spacer(1, 20))
-                if not county_trends.empty:
-                    self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{county}")
-                    complete_story.append(Paragraph(f'<a name="trends_table_{county}"></a>Detailed Branch Trends Data:', self.subsection_style))
-                    trend_data = []
-                    trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
-                    for _, row in county_trends.iterrows():
-                        trend_data.append([
-                            self.format_year(row['year']),
-                            self.format_number(row['total_branches']),
-                            f"{'+' if row['total_yoy_change_abs'] > 0 else ''}{self.format_number(row['total_yoy_change_abs'])}" if not pd.isna(row['total_yoy_change_abs']) else "N/A",
-                            f"{'+' if row['total_yoy_change'] > 0 else ''}{self.format_percentage_table(row['total_yoy_change'])}" if not pd.isna(row['total_yoy_change']) else "N/A",
-                            f"{'+' if row['total_cumulative_change'] > 0 else ''}{self.format_percentage_table(row['total_cumulative_change'])}" if not pd.isna(row['total_cumulative_change']) else "N/A",
-                            self.format_percentage_table(row['lmict_pct']),
-                            self.format_percentage_table(row['mmct_pct']),
-                            self.format_percentage_table(row['both_pct'])
-                        ])
-                    trend_table = Table(trend_data, colWidths=[0.8*inch, 1.1*inch, 1*inch, 0.9*inch, 1*inch, 0.9*inch, 0.9*inch, 0.9*inch])
-                    trend_table.setStyle(TableStyle([
-                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
-                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                        ('FONTSIZE', (0, 0), (-1, 0), 10),
-                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                        ('TOPPADDING', (0, 0), (-1, 0), 12),
-                        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
-                        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-                        ('FONTSIZE', (0, 1), (-1, -1), 9),
-                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-                        ('TOPPADDING', (0, 1), (-1, -1), 8),
-                    ]))
-                    complete_story.append(KeepTogether([trend_table, Spacer(1, 15)]))
-                
-                # Market Concentration Section
-                complete_story.append(PageBreak())
-                self.current_page += 1
-                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{county}")
-                complete_story.append(Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style))
-                if county in top_banks and not county_market_shares.empty:
+            if not county_trends.empty:
+                self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{county}")
+                complete_story.append(Paragraph(f'<a name="trends_table_{county}"></a>Detailed Branch Trends Data:', self.subsection_style))
+                trend_data = []
+                trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
+                for _, row in county_trends.iterrows():
+                    trend_data.append([
+                        self.format_year(row['year']),
+                        self.format_number(row['total_branches']),
+                        f"{'+' if row['total_yoy_change_abs'] > 0 else ''}{self.format_number(row['total_yoy_change_abs'])}" if not pd.isna(row['total_yoy_change_abs']) else "N/A",
+                        f"{'+' if row['total_yoy_change'] > 0 else ''}{self.format_percentage_table(row['total_yoy_change'])}" if not pd.isna(row['total_yoy_change']) else "N/A",
+                        f"{'+' if row['total_cumulative_change'] > 0 else ''}{self.format_percentage_table(row['total_cumulative_change'])}" if not pd.isna(row['total_cumulative_change']) else "N/A",
+                        self.format_percentage_table(row['lmict_pct']),
+                        self.format_percentage_table(row['mmct_pct']),
+                        self.format_percentage_table(row['both_pct'])
+                    ])
+                trend_table = Table(trend_data, colWidths=[0.8*inch, 1.1*inch, 1*inch, 0.9*inch, 1*inch, 0.9*inch, 0.9*inch, 0.9*inch])
+                trend_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('TOPPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                    ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                    ('TOPPADDING', (0, 1), (-1, -1), 8),
+                ]))
+                complete_story.append(KeepTogether([trend_table, Spacer(1, 15)]))
+            
+            # Market Concentration Section
+            complete_story.append(PageBreak())
+            self.current_page += 1
+            self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{county}")
+            complete_story.append(Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style))
+            if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
                     if not top_bank_data.empty:
                         if ai_analysis['bank_strategies']:
