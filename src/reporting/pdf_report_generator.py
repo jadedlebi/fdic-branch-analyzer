@@ -42,6 +42,21 @@ class EnhancedPDFReportGenerator:
             counties: List of counties analyzed
             years: List of years analyzed
         """
+        # Validate input data
+        if data.empty:
+            raise ValueError("Data DataFrame cannot be empty")
+        
+        required_columns = ['bank_name', 'year', 'county_state', 'total_branches', 'lmict', 'mmct']
+        missing_columns = [col for col in required_columns if col not in data.columns]
+        if missing_columns:
+            raise ValueError(f"Missing required columns: {missing_columns}")
+        
+        if not counties:
+            raise ValueError("Counties list cannot be empty")
+        
+        if not years:
+            raise ValueError("Years list cannot be empty")
+        
         self.data = data.copy()
         self.counties = counties
         self.years = sorted(years)
@@ -116,6 +131,15 @@ class EnhancedPDFReportGenerator:
         # Enhanced bullet point style
         self.bullet_style = ParagraphStyle(
             'EnhancedBullet',
+            parent=self.body_style,
+            leftIndent=20,
+            spaceAfter=8,
+            leading=14
+        )
+        
+        # Enhanced numbered list style
+        self.numbered_style = ParagraphStyle(
+            'EnhancedNumbered',
             parent=self.body_style,
             leftIndent=20,
             spaceAfter=8,
@@ -261,9 +285,11 @@ class EnhancedPDFReportGenerator:
                 'mmct': 'sum'
             }).reset_index()
             
-            # Calculate percentages
-            yearly_stats['lmict_pct'] = (yearly_stats['lmict'] / yearly_stats['total_branches'] * 100).round(2)
-            yearly_stats['mmct_pct'] = (yearly_stats['mmct'] / yearly_stats['total_branches'] * 100).round(2)
+            # Calculate percentages (handle division by zero)
+            yearly_stats['lmict_pct'] = np.where(yearly_stats['total_branches'] > 0, 
+                                                (yearly_stats['lmict'] / yearly_stats['total_branches'] * 100).round(2), 0)
+            yearly_stats['mmct_pct'] = np.where(yearly_stats['total_branches'] > 0, 
+                                               (yearly_stats['mmct'] / yearly_stats['total_branches'] * 100).round(2), 0)
             # Calculate "Both %" as the minimum of LMI % and MMCT % (theoretical maximum overlap)
             # Since we don't have actual intersection data, this represents the maximum possible overlap
             yearly_stats['both_pct'] = np.minimum(yearly_stats['lmict_pct'], yearly_stats['mmct_pct']).round(2)
@@ -274,9 +300,10 @@ class EnhancedPDFReportGenerator:
             yearly_stats['lmict_yoy_change'] = yearly_stats['lmict_pct'].pct_change() * 100
             yearly_stats['mmct_yoy_change'] = yearly_stats['mmct_pct'].pct_change() * 100
             
-            # Calculate cumulative changes from first year
+            # Calculate cumulative changes from first year (handle division by zero)
             first_year = yearly_stats['total_branches'].iloc[0]
-            yearly_stats['total_cumulative_change'] = ((yearly_stats['total_branches'] - first_year) / first_year * 100).round(2)
+            yearly_stats['total_cumulative_change'] = np.where(first_year > 0, 
+                                                              ((yearly_stats['total_branches'] - first_year) / first_year * 100).round(2), 0)
             
             trends[county] = yearly_stats
         
@@ -308,9 +335,11 @@ class EnhancedPDFReportGenerator:
                 'mmct': 'sum'
             }).reset_index()
             
-            bank_stats['market_share'] = (bank_stats['total_branches'] / total_county_branches * 100).round(2)
-            bank_stats['lmict_pct'] = (bank_stats['lmict'] / bank_stats['total_branches'] * 100).round(2)
-            bank_stats['mmct_pct'] = (bank_stats['mmct'] / bank_stats['total_branches'] * 100).round(2)
+            bank_stats['market_share'] = (bank_stats['total_branches'] / total_county_branches * 100).round(2) if total_county_branches > 0 else 0
+            bank_stats['lmict_pct'] = np.where(bank_stats['total_branches'] > 0, 
+                                              (bank_stats['lmict'] / bank_stats['total_branches'] * 100).round(2), 0)
+            bank_stats['mmct_pct'] = np.where(bank_stats['total_branches'] > 0, 
+                                             (bank_stats['mmct'] / bank_stats['total_branches'] * 100).round(2), 0)
             # Calculate "Both %" as the minimum of LMI % and MMCT % (theoretical maximum overlap)
             # Since we don't have actual intersection data, this represents the maximum possible overlap
             bank_stats['both_pct'] = np.minimum(bank_stats['lmict_pct'], bank_stats['mmct_pct']).round(2)
@@ -376,9 +405,14 @@ class EnhancedPDFReportGenerator:
                 absolute_change = last_year_branches - first_year_branches
                 percentage_change = ((last_year_branches - first_year_branches) / first_year_branches * 100) if first_year_branches > 0 else 0
                 
-                # Get current year demographics
-                current_lmi_pct = last_year_data['lmict_pct'].iloc[0] if not last_year_data.empty else 0
-                current_mmct_pct = last_year_data['mmct_pct'].iloc[0] if not last_year_data.empty else 0
+                # Get current year demographics (calculate if not available)
+                if not last_year_data.empty:
+                    total_branches = last_year_data['total_branches'].sum()
+                    current_lmi_pct = (last_year_data['lmict'].sum() / total_branches * 100) if total_branches > 0 else 0
+                    current_mmct_pct = (last_year_data['mmct'].sum() / total_branches * 100) if total_branches > 0 else 0
+                else:
+                    current_lmi_pct = 0
+                    current_mmct_pct = 0
                 
                 bank_growth_data.append({
                     'bank_name': bank_name,
@@ -431,18 +465,28 @@ class EnhancedPDFReportGenerator:
         analysis_data = {
             'county': county_data.get('county', 'Unknown County'),
             'years': self.years,
-            'trends': trends.to_dict('records') if hasattr(trends, 'empty') and not trends.empty else [],
-            'market_shares': market_shares.to_dict('records') if hasattr(market_shares, 'empty') and not market_shares.empty else [],
-            'bank_analysis': bank_analysis.to_dict('records') if hasattr(bank_analysis, 'empty') and not bank_analysis.empty else [],
+            'trends': trends.to_dict('records') if not trends.empty else [],
+            'market_shares': market_shares.to_dict('records') if not market_shares.empty else [],
+            'bank_analysis': bank_analysis.to_dict('records') if not bank_analysis.empty else [],
             'comparisons': comparisons
         }
         # Prompts are now explicit: only narrative, no tables or formatting
-        executive_summary = self.ai_analyzer.generate_executive_summary(analysis_data)
-        overall_trends_analysis = self.ai_analyzer.analyze_overall_trends(analysis_data)
-        bank_strategy_analysis = self.ai_analyzer.analyze_bank_strategies(analysis_data)
-        community_impact_analysis = self.ai_analyzer.analyze_community_impact(analysis_data)
-        key_findings = self.ai_analyzer.generate_key_findings(analysis_data)
-        conclusion_analysis = self.ai_analyzer.generate_conclusion(analysis_data)
+        try:
+            executive_summary = self.ai_analyzer.generate_executive_summary(analysis_data)
+            overall_trends_analysis = self.ai_analyzer.analyze_overall_trends(analysis_data)
+            bank_strategy_analysis = self.ai_analyzer.analyze_bank_strategies(analysis_data)
+            community_impact_analysis = self.ai_analyzer.analyze_community_impact(analysis_data)
+            key_findings = self.ai_analyzer.generate_key_findings(analysis_data)
+            conclusion_analysis = self.ai_analyzer.generate_conclusion(analysis_data)
+        except Exception as e:
+            print(f"Warning: AI analysis failed: {e}")
+            # Provide fallback content
+            executive_summary = ""
+            overall_trends_analysis = ""
+            bank_strategy_analysis = ""
+            community_impact_analysis = ""
+            key_findings = ""
+            conclusion_analysis = ""
         return {
             'executive_summary': executive_summary,
             'overall_trends': overall_trends_analysis,
@@ -570,6 +614,9 @@ class EnhancedPDFReportGenerator:
     
     def generate_enhanced_pdf_report(self, output_path: str):
         """Generate the complete enhanced PDF report with comprehensive analysis. AI only provides narrative text; all tables and formatting are handled by Python."""
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
         # Use BaseDocTemplate for better control over frames and page numbering
         doc = BaseDocTemplate(
             output_path,
@@ -623,7 +670,10 @@ class EnhancedPDFReportGenerator:
         
         # Generate enhanced AI analysis for each county (narrative only)
         for county in self.counties:
-            if county in trends and county in market_shares:
+            # Skip counties that don't have data
+            if county not in trends or county not in market_shares:
+                print(f"Warning: No data available for county: {county}")
+                continue
                 county_trends = trends[county]
                 county_market_shares = market_shares[county]
                 county_bank_analysis = bank_analysis.get(county, pd.DataFrame())
@@ -684,7 +734,7 @@ class EnhancedPDFReportGenerator:
                     complete_story.append(Spacer(1, 20))
                 if not county_trends.empty:
                     self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{county}")
-                    complete_story.append(Paragraph("Detailed Branch Trends Data:", self.subsection_style))
+                    complete_story.append(Paragraph(f'<a name="trends_table_{county}"></a>Detailed Branch Trends Data:', self.subsection_style))
                     trend_data = []
                     trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
                     for _, row in county_trends.iterrows():
@@ -734,7 +784,7 @@ class EnhancedPDFReportGenerator:
                         # Create a more professional summary section
                         complete_story.append(Spacer(1, 10))
                         self.add_toc_entry(f"Market Concentration Summary - {county}", 2, f"market_summary_{county}")
-                        complete_story.append(Paragraph("Market Concentration Summary", self.subsection_style))
+                        complete_story.append(Paragraph(f'<a name="market_summary_{county}"></a>Market Concentration Summary', self.subsection_style))
                         complete_story.append(Spacer(1, 5))
                         complete_story.append(Paragraph(
                             f"As of {max(self.years)}, {len(top_bank_data)} banks control "
@@ -745,7 +795,7 @@ class EnhancedPDFReportGenerator:
                         ))
                         complete_story.append(Spacer(1, 15))
                         self.add_toc_entry(f"Top Banks Market Share Data - {county}", 2, f"market_share_table_{county}")
-                        complete_story.append(Paragraph("Top Banks Market Share Data:", self.subsection_style))
+                        complete_story.append(Paragraph(f'<a name="market_share_table_{county}"></a>Top Banks Market Share Data:', self.subsection_style))
                         bank_table_data = []
                         bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
                         for _, row in top_bank_data.iterrows():
@@ -784,11 +834,8 @@ class EnhancedPDFReportGenerator:
                         complete_story.append(KeepTogether([bank_table, Spacer(1, 15)]))
                         if not county_bank_analysis.empty:
                             self.add_toc_entry(f"Growth Analysis - {county}", 2, f"growth_analysis_{county}")
-                            complete_story.append(Paragraph(
-                                f"<b>Growth Analysis:</b> The following table shows how the branch counts for these top banks "
-                                f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:",
-                                self.body_style
-                            ))
+                            complete_story.append(Paragraph(f'<a name="growth_analysis_{county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
+                                f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style))
                             growth_data = []
                             growth_data.append(['Bank', f'Branches\n({self.years[0]})', f'Branches\n({self.years[-1]})', f'Absolute\nChange', f'Percentage\nChange %'])
                             for _, row in county_bank_analysis.iterrows():
@@ -829,7 +876,7 @@ class EnhancedPDFReportGenerator:
                                 complete_story.extend(self.format_ai_content(ai_analysis['community_impact']))
                                 complete_story.append(Spacer(1, 15))
                             self.add_toc_entry(f"Community Impact Comparison Data - {county}", 2, f"community_impact_table_{county}")
-                            complete_story.append(Paragraph("Community Impact Comparison Data:", self.subsection_style))
+                            complete_story.append(Paragraph(f'<a name="community_impact_table_{county}"></a>Community Impact Comparison Data:', self.subsection_style))
                             comparison_data = []
                             comparison_data.append(['Bank', 'LMI %', 'MMCT %', 'Both %', 'LMI vs\nAvg', 'MMCT vs\nAvg'])
                             for _, row in bank_analysis[county].iterrows():
@@ -938,7 +985,7 @@ class EnhancedPDFReportGenerator:
         # Find the cover page elements (first few items)
         cover_page_end = 0
         for i, item in enumerate(complete_story):
-            if hasattr(item, 'tag') and item.tag == 'PageBreak':
+            if isinstance(item, PageBreak):
                 cover_page_end = i + 1
                 break
         
