@@ -78,22 +78,21 @@ def extract_parameters(prompt: str) -> Tuple[List[str], List[int]]:
         Tuple of (counties, years) where counties is a list of strings and years is a list of integers
     """
     extraction_prompt = f"""
-You are a data extraction assistant. Given the following report request, extract the counties and years mentioned.
+You are a data extraction assistant following NCRC guidelines. Extract counties and years from this request:
 
-Report request: {prompt}
+{prompt}
 
-Please respond with ONLY a JSON object in this exact format:
+Respond with ONLY this JSON format:
 {{
-    "counties": ["county1, state", "county2, state"],
+    "counties": ["County, Full State Name"],
     "years": [2020, 2021, 2022]
 }}
 
 Rules:
-- Counties should be in "County, State" format (e.g., "Los Angeles, CA")
-- Years should be integers
-- If no specific counties are mentioned, use common counties like "Los Angeles, CA", "New York, NY", "Cook, IL"
-- If no specific years are mentioned, use recent years like [2020, 2021, 2022]
-- Return ONLY the JSON, no other text
+- Use "County, Full State Name" format (e.g., "Los Angeles, California")
+- Major cities don't need state names unless for disambiguation
+- Default counties: "Los Angeles, California", "New York, New York", "Cook, Illinois"
+- Default years: [2020, 2021, 2022]
 """
 
     try:
@@ -187,22 +186,17 @@ class AIAnalyzer:
         market_shares_json = convert_numpy_types(market_shares[:5])  # Top 5 banks only
             
         prompt = f"""
-        Generate a concise executive summary for the bank branch analysis of {county} from {years[0]} to {years[-1]} based on the following data:
+        Generate a concise executive summary for bank branch analysis of {county} from {years[0]} to {years[-1]}:
 
-        Trends Data:
-        {json.dumps(trends_json, indent=2)}
+        Data: {json.dumps(trends_json, indent=2)} | {json.dumps(market_shares_json, indent=2)}
 
-        Market Share Data:
-        {json.dumps(market_shares_json, indent=2)}
+        Focus on:
+        - Key trends in branch counts
+        - Market concentration among major banks
+        - MMCT percentage changes around 2022 (2020 census effect)
+        - 2-3 paragraphs maximum
 
-        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
-        1. Summarizing key trends in branch counts using simplified percentage formatting (#.#%)
-        2. Highlighting market concentration among major banks
-        3. Noting significant changes in MMCT percentages around 2022 (2020 census data effect)
-        4. Keeping the summary concise and professional (2-3 paragraphs maximum)
-        
-        Format percentages as #.#% (e.g., "24.3%" not "24.31%")
-        Return only plain text narrative.
+        Describe observable patterns without suggesting underlying causes.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
@@ -222,22 +216,17 @@ class AIAnalyzer:
         market_shares_json = convert_numpy_types(market_shares[:5])  # Top 5 banks only
             
         prompt = f"""
-        Generate 3-5 key findings for the bank branch analysis of {county} from {years[0]} to {years[-1]} based on the following data:
+        Generate 3-5 key findings for {county} analysis from {years[0]} to {years[-1]}:
 
-        Trends Data:
-        {json.dumps(trends_json, indent=2)}
+        Data: {json.dumps(trends_json, indent=2)} | {json.dumps(market_shares_json, indent=2)}
 
-        Market Share Data:
-        {json.dumps(market_shares_json, indent=2)}
+        Focus on:
+        - Most significant trends and patterns
+        - MMCT changes around 2022 (2020 census effect)
+        - Actionable data observations
+        - Format as bullet points starting with "•"
 
-        IMPORTANT: Generate ONLY narrative text as bullet points. Do not create tables, charts, or any formatting. Focus on:
-        1. Highlighting the most significant trends and patterns
-        2. Using simplified percentage formatting (#.#%)
-        3. Noting any notable changes in MMCT percentages around 2022 (2020 census effect)
-        4. Focusing on actionable insights and strategic implications
-        
-        Format each finding as a bullet point starting with "•"
-        Return only plain text narrative with bullet points.
+        Present factual patterns without speculating about strategic implications.
         """
         
         return self._call_ai(prompt, max_tokens=600, temperature=0.3)
@@ -255,21 +244,18 @@ class AIAnalyzer:
         trends_json = convert_numpy_types(trends)
             
         prompt = f"""
-        Analyze the overall branch trends for {county} from {years[0]} to {years[-1]} based on the following data:
+        Analyze overall branch trends for {county} from {years[0]} to {years[-1]}:
 
-        Trends Data:
-        {json.dumps(trends_json, indent=2)}
+        Data: {json.dumps(trends_json, indent=2)}
 
-        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
-        1. Explaining the overall branch count trends using simplified percentage formatting (#.#%)
-        2. Highlighting year-over-year changes and cumulative effects
-        3. Noting any significant changes in MMCT percentages around 2022 (2020 census data effect)
-        4. Comparing trends to broader state/national patterns where relevant
-        5. Explaining the three distinct categories: LMICT (Low-to-Moderate Income), MMCT (Majority-Minority), and LMI/MMCT (both)
-        6. Using clear, professional language suitable for business audiences
-        
-        Keep the analysis to 2-3 paragraphs maximum.
-        Return only plain text narrative.
+        Focus on:
+        - Overall branch count trends and year-over-year changes
+        - MMCT percentage changes around 2022 (2020 census effect)
+        - Three categories: LMICT, MMCT, and LMI/MMCT
+        - Comparison to broader patterns where relevant
+        - 2-3 paragraphs maximum
+
+        Describe what the data demonstrates without attributing intent.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
@@ -289,23 +275,18 @@ class AIAnalyzer:
         bank_analysis_json = convert_numpy_types(bank_analysis)
             
         prompt = f"""
-        Analyze the banking strategies and market concentration in {county} from {years[0]} to {years[-1]} based on the following data:
+        Analyze market concentration in {county} from {years[0]} to {years[-1]}:
 
-        Market Share Data:
-        {json.dumps(market_shares_json, indent=2)}
+        Data: {json.dumps(market_shares_json, indent=2)} | {json.dumps(bank_analysis_json, indent=2)}
 
-        Bank Growth Analysis:
-        {json.dumps(bank_analysis_json, indent=2)}
+        Focus on:
+        - Market concentration patterns among major banks
+        - Performance differences in serving LMICT, MMCT, and LMI/MMCT communities
+        - MMCT changes around 2022 (2020 census effect)
+        - Competitive dynamics observable in data
+        - 2-3 paragraphs maximum
 
-        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
-        1. Explaining the market concentration among major banks using simplified percentage formatting (#.#%)
-        2. Analyzing growth patterns and strategic implications
-        3. Comparing bank performance in serving LMICT, MMCT, and LMI/MMCT communities
-        4. Noting any significant changes in MMCT percentages around 2022 (2020 census effect)
-        5. Providing insights into competitive dynamics and market structure
-        
-        Keep the analysis to 2-3 paragraphs maximum.
-        Return only plain text narrative.
+        Report measurable patterns without speculating about bank strategies.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
@@ -325,24 +306,18 @@ class AIAnalyzer:
         comparisons_json = convert_numpy_types(comparisons)
             
         prompt = f"""
-        Analyze the community impact and branch distribution in {county} from {years[0]} to {years[-1]} based on the following data:
+        Analyze community banking patterns in {county} from {years[0]} to {years[-1]}:
 
-        Market Share Data:
-        {json.dumps(market_shares_json, indent=2)}
+        Data: {json.dumps(market_shares_json, indent=2)} | {json.dumps(comparisons_json, indent=2)}
 
-        County Comparisons:
-        {json.dumps(comparisons_json, indent=2)}
+        Focus on:
+        - How banks serve different community types (LMICT, MMCT, LMI/MMCT)
+        - Bank performance compared to county averages
+        - 2020 census impact on MMCT designations (effective 2022)
+        - Observable access patterns in data
+        - 2-3 paragraphs maximum
 
-        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
-        1. Explaining how banks serve different community types using simplified percentage formatting (#.#%)
-        2. Comparing bank performance to county averages
-        3. Explaining the three distinct categories: LMICT, MMCT, and LMI/MMCT
-        4. Noting the 2020 census impact on MMCT designations (effective 2022)
-        5. Providing insights into community banking access and equity
-        6. Comparing to broader state/national trends where relevant
-        
-        Keep the analysis to 2-3 paragraphs maximum.
-        Return only plain text narrative.
+        Describe banking access patterns without inferring underlying causes.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)
@@ -362,24 +337,18 @@ class AIAnalyzer:
         market_shares_json = convert_numpy_types(market_shares[:5])  # Top 5 banks
             
         prompt = f"""
-        Generate a conclusion for the bank branch analysis of {county} from {years[0]} to {years[-1]} based on the following data:
+        Generate conclusion for {county} analysis from {years[0]} to {years[-1]}:
 
-        Trends Data:
-        {json.dumps(trends_json, indent=2)}
+        Data: {json.dumps(trends_json, indent=2)} | {json.dumps(market_shares_json, indent=2)}
 
-        Market Share Data:
-        {json.dumps(market_shares_json, indent=2)}
+        Focus on:
+        - Key data patterns using proper formatting
+        - Three community categories (LMICT, MMCT, LMI/MMCT)
+        - 2020 census impact on MMCT data
+        - Observable trends and their measurable effects
+        - 2-3 paragraphs maximum
 
-        IMPORTANT: Generate ONLY narrative text. Do not create tables, charts, or any formatting. Focus on:
-        1. Summarizing the key strategic implications using simplified percentage formatting (#.#%)
-        2. Addressing the three distinct community categories (LMICT, MMCT, LMI/MMCT)
-        3. Noting the 2020 census impact on MMCT data
-        4. Providing forward-looking insights and recommendations
-        5. Comparing to broader market trends where relevant
-        6. Maintaining a professional, business-oriented tone
-        
-        Keep the conclusion to 2-3 paragraphs maximum.
-        Return only plain text narrative.
+        Synthesize key data insights without making policy suggestions.
         """
         
         return self._call_ai(prompt, max_tokens=800, temperature=0.3)

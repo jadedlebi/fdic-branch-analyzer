@@ -91,14 +91,8 @@ class TrackedAIAnalyzer:
         json_data = convert_dataframe_to_json_serializable(data)
         
         prompt = f"""
-        Generate an executive summary for the following banking data:
-        
-        Counties: {json_data.get('counties', [])}
-        Years: {json_data.get('years', [])}
-        Total branches: {json_data.get('total_branches', 0)}
-        Top banks: {json_data.get('top_banks', [])}
-        
-        Please provide a concise executive summary highlighting key trends and insights.
+        Generate executive summary for: Counties: {json_data.get('counties', [])} | Years: {json_data.get('years', [])} | Branches: {json_data.get('total_branches', 0)} | Top banks: {json_data.get('top_banks', [])}
+        Highlight key trends and data insights without speculation.
         """
         
         return self._call_ai_with_tracking(prompt, max_tokens=800, call_index=0, total_calls=6)
@@ -109,15 +103,8 @@ class TrackedAIAnalyzer:
         json_data = convert_dataframe_to_json_serializable(data)
         
         prompt = f"""
-        Based on the following banking data, identify the key findings:
-        
-        Counties: {json_data.get('counties', [])}
-        Years: {json_data.get('years', [])}
-        Total branches: {json_data.get('total_branches', 0)}
-        Top banks: {json_data.get('top_banks', [])}
-        Data: {json.dumps(json_data.get('data', []), indent=2)}
-        
-        Please provide 3-5 key findings about market trends, bank strategies, and community impact.
+        Generate 3-5 key findings for: Counties: {json_data.get('counties', [])} | Years: {json_data.get('years', [])} | Data: {json.dumps(json_data.get('data', []), indent=2)}
+        Focus on market trends and community patterns observable in data.
         """
         
         return self._call_ai_with_tracking(prompt, max_tokens=600, call_index=1, total_calls=6)
@@ -128,13 +115,8 @@ class TrackedAIAnalyzer:
         json_data = convert_dataframe_to_json_serializable(data)
         
         prompt = f"""
-        Analyze the trends in this banking data:
-        
-        Counties: {json_data.get('counties', [])}
-        Years: {json_data.get('years', [])}
-        Data: {json.dumps(json_data.get('data', []), indent=2)}
-        
-        Please provide insights about year-over-year changes, market consolidation, and strategic implications.
+        Analyze trends in: Counties: {json_data.get('counties', [])} | Years: {json_data.get('years', [])} | Data: {json.dumps(json_data.get('data', []), indent=2)}
+        Describe year-over-year changes and market patterns without inferring causes.
         """
         
         return self._call_ai_with_tracking(prompt, max_tokens=700, call_index=2, total_calls=6)
@@ -145,14 +127,8 @@ class TrackedAIAnalyzer:
         json_data = convert_dataframe_to_json_serializable(data)
         
         prompt = f"""
-        Analyze the banking strategies evident in this data:
-        
-        Counties: {json_data.get('counties', [])}
-        Years: {json_data.get('years', [])}
-        Top banks: {json_data.get('top_banks', [])}
-        Data: {json.dumps(json_data.get('data', []), indent=2)}
-        
-        Please provide insights about individual bank strategies, market positioning, and competitive dynamics.
+        Analyze market patterns in: Counties: {json_data.get('counties', [])} | Years: {json_data.get('years', [])} | Banks: {json_data.get('top_banks', [])} | Data: {json.dumps(json_data.get('data', []), indent=2)}
+        Describe competitive dynamics observable in data without strategic speculation.
         """
         
         return self._call_ai_with_tracking(prompt, max_tokens=700, call_index=3, total_calls=6)
@@ -163,13 +139,8 @@ class TrackedAIAnalyzer:
         json_data = convert_dataframe_to_json_serializable(data)
         
         prompt = f"""
-        Analyze the community impact of banking decisions in this data:
-        
-        Counties: {json_data.get('counties', [])}
-        Years: {json_data.get('years', [])}
-        Data: {json.dumps(json_data.get('data', []), indent=2)}
-        
-        Please provide insights about financial inclusion, community reinvestment, and access to banking services.
+        Analyze community patterns in: Counties: {json_data.get('counties', [])} | Years: {json_data.get('years', [])} | Data: {json.dumps(json_data.get('data', []), indent=2)}
+        Describe financial access patterns without speculating about inclusion strategies.
         """
         
         return self._call_ai_with_tracking(prompt, max_tokens=700, call_index=4, total_calls=6)
@@ -180,15 +151,8 @@ class TrackedAIAnalyzer:
         json_data = convert_dataframe_to_json_serializable(data)
         
         prompt = f"""
-        Provide a comprehensive conclusion for this banking analysis:
-        
-        Counties: {json_data.get('counties', [])}
-        Years: {json_data.get('years', [])}
-        Total branches: {json_data.get('total_branches', 0)}
-        Top banks: {json_data.get('top_banks', [])}
-        Data: {json.dumps(json_data.get('data', []), indent=2)}
-        
-        Please synthesize the key insights and provide strategic recommendations.
+        Synthesize insights for: Counties: {json_data.get('counties', [])} | Years: {json_data.get('years', [])} | Branches: {json_data.get('total_branches', 0)} | Banks: {json_data.get('top_banks', [])} | Data: {json.dumps(json_data.get('data', []), indent=2)}
+        Provide data-based observations without policy recommendations.
         """
         
         return self._call_ai_with_tracking(prompt, max_tokens=500, call_index=5, total_calls=6)

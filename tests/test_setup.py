@@ -73,7 +73,7 @@ def test_gpt():
     
     try:
         from gpt_utils import ask_gpt
-        response = ask_gpt("Hello! Please respond with 'GPT is working' if you can see this message.")
+        response = ask_gpt("Respond with 'AI system operational and NCRC compliant' if you see this.")
         print(f"✅ GPT API working - Response: {response[:50]}...")
         return True
     except Exception as e:

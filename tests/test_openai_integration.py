@@ -21,7 +21,7 @@ def test_openai_integration():
     try:
         # Test basic AI call
         print("📝 Testing basic AI call...")
-        test_prompt = "What is 2 + 2? Please respond with just the number."
+        test_prompt = "What is 2 + 2? Respond with the integer following NCRC formatting."
         response = ask_ai(test_prompt)
         print(f"✅ AI Response: {response}")
         

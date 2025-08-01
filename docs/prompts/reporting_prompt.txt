@@ -1,1 +1,3 @@
-Generate a comprehensive FDIC bank branch analysis report for Los Angeles County, California and Cook County, Illinois for the years 2020, 2021, and 2022. The report should include data on total branches, LMI (Low-to-Moderate Income) branches, and minority census tract branches for each bank operating in these counties during the specified time period.
+Generate comprehensive FDIC (Federal Deposit Insurance Corporation) bank branch analysis for Los Angeles, California and Cook, Illinois for years 2020, 2021, and 2022. Include data on total branches, LMICT (Low-to-Moderate Income Census Tract) branches, and MMCT (Majority-Minority Census Tract) branches for each operating bank.
+
+Analyze observable patterns in the data without suggesting policy interventions or speculating about banking motivations.
