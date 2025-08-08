@@ -29,7 +29,20 @@ class TOCEntry:
         self.title = title
         self.level = level  # 1 = section, 2 = subsection, 3 = sub-subsection
         self.page = page
-        self.anchor = anchor or f"toc_{len(title)}".replace(" ", "_").replace(":", "").replace("(", "").replace(")", "")
+        # Create a safe anchor name if none provided
+        if anchor is None:
+            import re
+            safe_anchor = re.sub(r'[^a-zA-Z0-9_]', '_', title)
+            safe_anchor = re.sub(r'_+', '_', safe_anchor)  # Replace multiple underscores with single
+            safe_anchor = safe_anchor.strip('_')  # Remove leading/trailing underscores
+            self.anchor = safe_anchor
+        else:
+            # Ensure the provided anchor is also safe
+            import re
+            safe_anchor = re.sub(r'[^a-zA-Z0-9_]', '_', anchor)
+            safe_anchor = re.sub(r'_+', '_', safe_anchor)  # Replace multiple underscores with single
+            safe_anchor = safe_anchor.strip('_')  # Remove leading/trailing underscores
+            self.anchor = safe_anchor
 
 
 class EnhancedPDFReportGenerator:
@@ -207,14 +220,6 @@ class EnhancedPDFReportGenerator:
 
     def add_toc_entry(self, title: str, level: int, anchor: str = None):
         """Add a table of contents entry."""
-        # Sanitize anchor name to be URL-safe
-        if anchor is None:
-            # Create a safe anchor from the title
-            safe_anchor = re.sub(r'[^a-zA-Z0-9_]', '_', title)
-            safe_anchor = re.sub(r'_+', '_', safe_anchor)  # Replace multiple underscores with single
-            safe_anchor = safe_anchor.strip('_')  # Remove leading/trailing underscores
-            anchor = safe_anchor
-        
         entry = TOCEntry(title, level, self.current_page, anchor)
         self.toc_entries.append(entry)
         
