@@ -220,16 +220,30 @@ class EnhancedPDFReportGenerator:
         
         # Add TOC entries
         for entry in self.toc_entries:
+            # Remove county names from titles
+            clean_title = entry.title
+            if " - " in clean_title:
+                clean_title = clean_title.split(" - ")[0]
+            
             if entry.level == 1:  # Section
-                # Create clickable link with page number
-                link_text = f'<link href="#{entry.anchor}">{entry.title}</link> <i>Page {entry.page}</i>'
+                # Create clickable link with right-justified page number
+                link_text = f'<link href="#{entry.anchor}">{clean_title}</link>'
                 toc_story.append(Paragraph(link_text, self.toc_section_style))
+                # Add right-justified page number
+                page_text = f'<para align="right">Page {entry.page}</para>'
+                toc_story.append(Paragraph(page_text, self.toc_section_style))
             elif entry.level == 2:  # Subsection
-                link_text = f'<link href="#{entry.anchor}">{entry.title}</link> <i>Page {entry.page}</i>'
+                link_text = f'<link href="#{entry.anchor}">{clean_title}</link>'
                 toc_story.append(Paragraph(link_text, self.toc_subsection_style))
+                # Add right-justified page number
+                page_text = f'<para align="right">Page {entry.page}</para>'
+                toc_story.append(Paragraph(page_text, self.toc_subsection_style))
             elif entry.level == 3:  # Table/Figure
-                link_text = f'<link href="#{entry.anchor}">{entry.title}</link> <i>Page {entry.page}</i>'
+                link_text = f'<link href="#{entry.anchor}">{clean_title}</link>'
                 toc_story.append(Paragraph(link_text, self.toc_table_style))
+                # Add right-justified page number
+                page_text = f'<para align="right">Page {entry.page}</para>'
+                toc_story.append(Paragraph(page_text, self.toc_table_style))
         
         return toc_story
     
@@ -790,14 +804,17 @@ class EnhancedPDFReportGenerator:
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
                 self.add_toc_entry(f"Key Findings - {area_name}", 1, f"key_findings_{county}")
-                complete_story.append(Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style))
+                key_header = Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style)
             else:
                 self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{county}")
-                complete_story.append(Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style))
+                key_header = Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style)
+            
             if ai_analysis['key_findings']:
                 key_content = self.format_key_findings(ai_analysis['key_findings'])
-                complete_story.extend(key_content)
-            complete_story.append(Spacer(1, 20))
+                complete_story.append(KeepTogether([key_header] + key_content + [Spacer(1, 20)]))
+            else:
+                complete_story.append(key_header)
+                complete_story.append(Spacer(1, 20))
             
             # Understanding the Data Section
             complete_story.append(PageBreak())
@@ -832,10 +849,7 @@ class EnhancedPDFReportGenerator:
                 Spacer(1, 20)
             ]
             
-            if county == 'combined':
-                complete_story.append(KeepTogether([data_header, data_intro] + data_bullets))
-            else:
-                complete_story.append(KeepTogether([data_header, data_intro] + data_bullets))
+            complete_story.append(KeepTogether([data_header, data_intro] + data_bullets))
             
             # Overall Branch Trends Section
             complete_story.append(PageBreak())
@@ -898,7 +912,6 @@ class EnhancedPDFReportGenerator:
             else:
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{county}")
                 market_header = Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
-                complete_story.append(market_header)
             
             if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
@@ -934,7 +947,7 @@ class EnhancedPDFReportGenerator:
                             ))
                         complete_story.append(Spacer(1, 15))
                         self.add_toc_entry(f"Top Banks Market Share Data - {county}", 2, f"market_share_table_{county}")
-                        complete_story.append(Paragraph(f'<a name="market_share_table_{county}"></a>Top Banks Market Share Data:', self.subsection_style))
+                        market_share_header = Paragraph(f'<a name="market_share_table_{county}"></a>Top Banks Market Share Data:', self.subsection_style)
                         bank_table_data = []
                         bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
                         for _, row in top_bank_data.iterrows():
@@ -970,11 +983,11 @@ class EnhancedPDFReportGenerator:
                             ('TOPPADDING', (0, 1), (-1, -1), 8),
                             ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                         ]))
-                        complete_story.append(KeepTogether([bank_table, Spacer(1, 15)]))
+                        complete_story.append(KeepTogether([market_share_header, bank_table, Spacer(1, 15)]))
                         if not county_bank_analysis.empty:
                             self.add_toc_entry(f"Growth Analysis - {county}", 2, f"growth_analysis_{county}")
-                            complete_story.append(Paragraph(f'<a name="growth_analysis_{county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
-                                f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style))
+                            growth_header = Paragraph(f'<a name="growth_analysis_{county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
+                                f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
                             growth_data = []
                             growth_data.append(['Bank', f'Branches\n({self.years[0]})', f'Branches\n({self.years[-1]})', f'Absolute\nChange', f'Percentage\nChange %'])
                             for _, row in county_bank_analysis.iterrows():
@@ -1009,13 +1022,13 @@ class EnhancedPDFReportGenerator:
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
                                 ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            complete_story.append(KeepTogether([growth_table, Spacer(1, 15)]))
+                            complete_story.append(KeepTogether([growth_header, growth_table, Spacer(1, 15)]))
                         if county in bank_analysis and not bank_analysis[county].empty:
                             if ai_analysis['community_impact']:
                                 complete_story.extend(self.format_ai_content(ai_analysis['community_impact']))
                                 complete_story.append(Spacer(1, 15))
                             self.add_toc_entry(f"Community Impact Comparison Data - {county}", 2, f"community_impact_table_{county}")
-                            complete_story.append(Paragraph(f'<a name="community_impact_table_{county}"></a>Community Impact Comparison Data:', self.subsection_style))
+                            community_impact_header = Paragraph(f'<a name="community_impact_table_{county}"></a>Community Impact Comparison Data:', self.subsection_style)
                             comparison_data = []
                             comparison_data.append(['Bank', 'LMI %', 'MMCT %', 'Both %', 'LMI vs\nAvg', 'MMCT vs\nAvg'])
                             for _, row in bank_analysis[county].iterrows():
@@ -1024,8 +1037,8 @@ class EnhancedPDFReportGenerator:
                                     bank_lmi = bank_current.iloc[0]['lmict_pct']
                                     bank_mmct = bank_current.iloc[0]['mmct_pct']
                                     bank_both = min(bank_lmi, bank_mmct) if bank_lmi > 0 and bank_mmct > 0 else 0
-                                    lmi_vs_avg = f"<font color='green'>▲</font>" if bank_lmi > county_comparisons['county_avg_lmict'] else f"<font color='red'>▼</font>" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
-                                    mmct_vs_avg = f"<font color='green'>▲</font>" if bank_mmct > county_comparisons['county_avg_mmct'] else f"<font color='red'>▼</font>" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
+                                    lmi_vs_avg = f"<color='green'>▲</color>" if bank_lmi > county_comparisons['county_avg_lmict'] else f"<color='red'>▼</color>" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
+                                    mmct_vs_avg = f"<color='green'>▲</color>" if bank_mmct > county_comparisons['county_avg_mmct'] else f"<color='red'>▼</color>" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
                                     comparison_data.append([
                                         Paragraph(self.to_proper_case(row['bank_name']), ParagraphStyle(
                                             'BankName',
@@ -1058,7 +1071,7 @@ class EnhancedPDFReportGenerator:
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
                                 ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            complete_story.append(KeepTogether([comparison_table, Spacer(1, 15)]))
+                            complete_story.append(KeepTogether([community_impact_header, comparison_table, Spacer(1, 15)]))
             
 
         
@@ -1066,34 +1079,38 @@ class EnhancedPDFReportGenerator:
         complete_story.append(PageBreak())
         self.current_page += 1
         self.add_toc_entry("Methodology and Technical Notes", 1, "methodology")
-        complete_story.append(Paragraph('<a name="methodology"></a>Methodology and Technical Notes', self.section_style))
-        complete_story.append(Paragraph(
-            f"<b>Analysis Period:</b> {years_str}<br/>"
-            f"<b>Geographic Scope:</b> {counties_str}<br/>"
-            f"<b>Report Generated:</b> {datetime.now().strftime('%B %d, %Y at %I:%M %p')}<br/>"
-            f"<b>Data Source:</b> FDIC Summary of Deposits<br/>"
-            f"<b>Analysis Method:</b> AI-Powered Statistical Analysis with {self.ai_analyzer.provider.upper()}<br/>"
-            f"<b>Report Type:</b> Comprehensive Market Analysis",
-            self.body_style
-        ))
-        complete_story.append(Spacer(1, 15))
-        complete_story.append(Paragraph(
-            f"This analysis examines bank branch trends using FDIC Summary of Deposits data. "
-            f"The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, "
-            f"and the percentage of branches in Majority-Minority Census Tracts (MMCT). We identify the largest banks by market share "
-            f"and analyze their growth patterns and community impact compared to county averages. All analysis is enhanced with "
-            f"AI-powered insights using {self.ai_analyzer.provider.upper()} for deeper interpretation of trends and strategic implications.",
-            self.body_style
-        ))
-        complete_story.append(Spacer(1, 15))
-        complete_story.append(Paragraph(
-            "<b>Data Definitions:</b><br/>"
-            "• <b>LMICT:</b> Low-to-Moderate Income Census Tracts - areas with median family income below 80% of the area median income<br/>"
-            "• <b>MMCT:</b> Majority-Minority Census Tracts - areas where minority populations represent more than 50% of the total population<br/>"
-            "• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities<br/>"
-            "• <b>Market Share:</b> Percentage of total branches in the county controlled by each bank",
-            self.body_style
-        ))
+        methodology_header = Paragraph('<a name="methodology"></a>Methodology and Technical Notes', self.section_style)
+        methodology_content = [
+            Paragraph(
+                f"<b>Analysis Period:</b> {years_str}<br/>"
+                f"<b>Geographic Scope:</b> {counties_str}<br/>"
+                f"<b>Report Generated:</b> {datetime.now().strftime('%B %d, %Y at %I:%M %p')}<br/>"
+                f"<b>Data Source:</b> FDIC Summary of Deposits<br/>"
+                f"<b>Analysis Method:</b> AI-Powered Statistical Analysis with {self.ai_analyzer.provider.upper()}<br/>"
+                f"<b>Report Type:</b> Comprehensive Market Analysis",
+                self.body_style
+            ),
+            Spacer(1, 15),
+            Paragraph(
+                f"This analysis examines bank branch trends using FDIC Summary of Deposits data. "
+                f"The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, "
+                f"and the percentage of branches in Majority-Minority Census Tracts (MMCT). We identify the largest banks by market share "
+                f"and analyze their growth patterns and community impact compared to county averages. All analysis is enhanced with "
+                f"AI-powered insights using {self.ai_analyzer.provider.upper()} for deeper interpretation of trends and strategic implications.",
+                self.body_style
+            ),
+            Spacer(1, 15),
+            Paragraph(
+                "<b>Data Definitions:</b><br/>"
+                "• <b>LMICT:</b> Low-to-Moderate Income Census Tracts - areas with median family income below 80% of the area median income<br/>"
+                "• <b>MMCT:</b> Majority-Minority Census Tracts - areas where minority populations represent more than 50% of the total population<br/>"
+                "• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities<br/>"
+                "• <b>Market Share:</b> Percentage of total branches in the county controlled by each bank",
+                self.body_style
+            )
+        ]
+        
+        complete_story.append(KeepTogether([methodology_header] + methodology_content))
         
         # Now insert the TOC page after the cover page
         toc_story = self.create_toc_page()
