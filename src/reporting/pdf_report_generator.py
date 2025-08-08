@@ -520,9 +520,9 @@ class EnhancedPDFReportGenerator:
         analysis_data = {
             'county': county_data.get('county', 'Unknown County'),
             'years': self.years,
-            'trends': trends.to_dict('records') if not trends.empty else [],
-            'market_shares': market_shares.to_dict('records') if not market_shares.empty else [],
-            'bank_analysis': bank_analysis.to_dict('records') if not bank_analysis.empty else [],
+            'trends': trends.to_dict('records') if hasattr(trends, 'empty') and not trends.empty else (trends if isinstance(trends, list) else []),
+            'market_shares': market_shares.to_dict('records') if hasattr(market_shares, 'empty') and not market_shares.empty else (market_shares if isinstance(market_shares, list) else []),
+            'bank_analysis': bank_analysis.to_dict('records') if hasattr(bank_analysis, 'empty') and not bank_analysis.empty else (bank_analysis if isinstance(bank_analysis, list) else []),
             'comparisons': comparisons
         }
         # Prompts are now explicit: only narrative, no tables or formatting
@@ -670,7 +670,9 @@ class EnhancedPDFReportGenerator:
     def generate_enhanced_pdf_report(self, output_path: str):
         """Generate the complete enhanced PDF report with comprehensive analysis. AI only provides narrative text; all tables and formatting are handled by Python."""
         # Ensure output directory exists
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
         
         # Use BaseDocTemplate for better control over frames and page numbering
         doc = BaseDocTemplate(
@@ -773,41 +775,43 @@ class EnhancedPDFReportGenerator:
             # Single county - use original data
             counties_to_process = self.counties
         
-        # Generate enhanced AI analysis for each county/combined area (narrative only)
-        for county in counties_to_process:
-            # Skip counties that don't have data
-            if county not in trends or county not in market_shares:
-                print(f"Warning: No data available for county: {county}")
-                continue
-            
-            county_trends = trends[county]
-            county_market_shares = market_shares[county]
-            county_bank_analysis = bank_analysis.get(county, pd.DataFrame())
-            county_comparisons = comparisons.get(county, {})
-            if county == 'combined':
-                # Use the already generated AI analysis for combined data
-                pass
-            else:
-                ai_analysis = self.generate_enhanced_ai_analysis(
-                    {'county': county},
-                    county_trends,
-                    county_market_shares,
-                    county_bank_analysis,
-                    county_comparisons
-                )
-            
-            # Executive Summary Section
-            complete_story.append(PageBreak())
-            self.current_page += 1
-            if county == 'combined':
-                area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Executive Summary - {area_name}", 1, f"exec_summary_combined")
-                exec_header = Paragraph(f'<a name="exec_summary_combined"></a>Executive Summary', self.section_style)
-            else:
+                    # Generate enhanced AI analysis for each county/combined area (narrative only)
+            for county in counties_to_process:
+                # Skip counties that don't have data
+                if county not in trends or county not in market_shares:
+                    print(f"Warning: No data available for county: {county}")
+                    continue
+                
+                county_trends = trends[county]
+                county_market_shares = market_shares[county]
+                county_bank_analysis = bank_analysis.get(county, pd.DataFrame())
+                county_comparisons = comparisons.get(county, {})
+                if county == 'combined':
+                    # Use the already generated AI analysis for combined data
+                    pass
+                else:
+                    ai_analysis = self.generate_enhanced_ai_analysis(
+                        {'county': county},
+                        county_trends,
+                        county_market_shares,
+                        county_bank_analysis,
+                        county_comparisons
+                    )
+                
                 # Create safe county name once and reuse it throughout this function
-                safe_county = self.create_safe_anchor(county)
-                self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{safe_county}")
-                exec_header = Paragraph(f'<a name="exec_summary_{safe_county}"></a>Executive Summary', self.section_style)
+                if county != 'combined':
+                    safe_county = self.create_safe_anchor(county)
+                
+                # Executive Summary Section
+                complete_story.append(PageBreak())
+                self.current_page += 1
+                if county == 'combined':
+                    area_name = ' and '.join(self.counties)
+                    self.add_toc_entry(f"Executive Summary - {area_name}", 1, f"exec_summary_combined")
+                    exec_header = Paragraph(f'<a name="exec_summary_combined"></a>Executive Summary', self.section_style)
+                else:
+                    self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{safe_county}")
+                    exec_header = Paragraph(f'<a name="exec_summary_{safe_county}"></a>Executive Summary', self.section_style)
             
             if ai_analysis['executive_summary']:
                 exec_content = self.format_ai_content(ai_analysis['executive_summary'])
@@ -936,10 +940,9 @@ class EnhancedPDFReportGenerator:
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {area_name}", 1, f"market_concentration_combined")
                 complete_story.append(Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style))
             else:
-                # Create safe county name once and reuse it throughout this section
-                safe_county = self.create_safe_anchor(county)
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{safe_county}")
                 market_header = Paragraph(f'<a name="market_concentration_{safe_county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
+                complete_story.append(market_header)
             
             if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
