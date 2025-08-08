@@ -207,6 +207,14 @@ class EnhancedPDFReportGenerator:
 
     def add_toc_entry(self, title: str, level: int, anchor: str = None):
         """Add a table of contents entry."""
+        # Sanitize anchor name to be URL-safe
+        if anchor is None:
+            # Create a safe anchor from the title
+            safe_anchor = re.sub(r'[^a-zA-Z0-9_]', '_', title)
+            safe_anchor = re.sub(r'_+', '_', safe_anchor)  # Replace multiple underscores with single
+            safe_anchor = safe_anchor.strip('_')  # Remove leading/trailing underscores
+            anchor = safe_anchor
+        
         entry = TOCEntry(title, level, self.current_page, anchor)
         self.toc_entries.append(entry)
         
@@ -309,6 +317,13 @@ class EnhancedPDFReportGenerator:
                 converted_text = converted_text.replace(bank_name, self.to_proper_case(bank_name))
         
         return converted_text
+    
+    def create_safe_anchor(self, text: str) -> str:
+        """Create a URL-safe anchor name from text."""
+        safe_anchor = re.sub(r'[^a-zA-Z0-9_]', '_', text)
+        safe_anchor = re.sub(r'_+', '_', safe_anchor)  # Replace multiple underscores with single
+        safe_anchor = safe_anchor.strip('_')  # Remove leading/trailing underscores
+        return safe_anchor
     
     def calculate_enhanced_trends(self) -> Dict[str, pd.DataFrame]:
         """Calculate comprehensive year-over-year trends for each county."""
@@ -785,11 +800,14 @@ class EnhancedPDFReportGenerator:
             self.current_page += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Executive Summary - {area_name}", 1, f"exec_summary_{county}")
-                exec_header = Paragraph(f'<a name="exec_summary_{county}"></a>Executive Summary', self.section_style)
+                self.add_toc_entry(f"Executive Summary - {area_name}", 1, f"exec_summary_combined")
+                exec_header = Paragraph(f'<a name="exec_summary_combined"></a>Executive Summary', self.section_style)
             else:
-                self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{county}")
-                exec_header = Paragraph(f'<a name="exec_summary_{county}"></a>Executive Summary', self.section_style)
+                # Create safe anchor name
+                safe_county = re.sub(r'[^a-zA-Z0-9_]', '_', county)
+                safe_county = re.sub(r'_+', '_', safe_county).strip('_')
+                self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{safe_county}")
+                exec_header = Paragraph(f'<a name="exec_summary_{safe_county}"></a>Executive Summary', self.section_style)
             
             if ai_analysis['executive_summary']:
                 exec_content = self.format_ai_content(ai_analysis['executive_summary'])
@@ -803,11 +821,14 @@ class EnhancedPDFReportGenerator:
             self.current_page += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Key Findings - {area_name}", 1, f"key_findings_{county}")
-                key_header = Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style)
+                self.add_toc_entry(f"Key Findings - {area_name}", 1, f"key_findings_combined")
+                key_header = Paragraph(f'<a name="key_findings_combined"></a>Key Findings', self.section_style)
             else:
-                self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{county}")
-                key_header = Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style)
+                # Create safe anchor name
+                safe_county = re.sub(r'[^a-zA-Z0-9_]', '_', county)
+                safe_county = re.sub(r'_+', '_', safe_county).strip('_')
+                self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{safe_county}")
+                key_header = Paragraph(f'<a name="key_findings_{safe_county}"></a>Key Findings', self.section_style)
             
             if ai_analysis['key_findings']:
                 key_content = self.format_key_findings(ai_analysis['key_findings'])
@@ -821,16 +842,17 @@ class EnhancedPDFReportGenerator:
             self.current_page += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Understanding the Data - {area_name}", 1, f"data_understanding_{county}")
-                complete_story.append(Paragraph(f'<a name="data_understanding_{county}"></a>Understanding the Data', self.section_style))
+                self.add_toc_entry(f"Understanding the Data - {area_name}", 1, f"data_understanding_combined")
+                complete_story.append(Paragraph(f'<a name="data_understanding_combined"></a>Understanding the Data', self.section_style))
                 complete_story.append(Paragraph(
                     f"This analysis examines bank branch trends in {area_name} from {years_str} using FDIC Summary of Deposits data. "
                     f"We focus on three key metrics:",
                     self.body_style
                 ))
             else:
-                self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{county}")
-                data_header = Paragraph(f'<a name="data_understanding_{county}"></a>Understanding the Data', self.section_style)
+                safe_county = self.create_safe_anchor(county)
+                self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{safe_county}")
+                data_header = Paragraph(f'<a name="data_understanding_{safe_county}"></a>Understanding the Data', self.section_style)
                 data_intro = Paragraph(
                     f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
                     f"We focus on three key metrics:",
@@ -856,11 +878,12 @@ class EnhancedPDFReportGenerator:
             self.current_page += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Overall Branch Trends - {area_name}", 1, f"branch_trends_{county}")
-                complete_story.append(Paragraph(f'<a name="branch_trends_{county}"></a>Overall Branch Trends', self.section_style))
+                self.add_toc_entry(f"Overall Branch Trends - {area_name}", 1, f"branch_trends_combined")
+                complete_story.append(Paragraph(f'<a name="branch_trends_combined"></a>Overall Branch Trends', self.section_style))
             else:
-                self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{county}")
-                trends_header = Paragraph(f'<a name="branch_trends_{county}"></a>Overall Branch Trends', self.section_style)
+                safe_county = self.create_safe_anchor(county)
+                self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{safe_county}")
+                trends_header = Paragraph(f'<a name="branch_trends_{safe_county}"></a>Overall Branch Trends', self.section_style)
             
             if ai_analysis['overall_trends']:
                 trends_content = self.format_ai_content(ai_analysis['overall_trends'])
@@ -869,8 +892,13 @@ class EnhancedPDFReportGenerator:
                 complete_story.append(trends_header)
                 complete_story.append(Spacer(1, 20))
             if not county_trends.empty:
-                self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{county}")
-                complete_story.append(Paragraph(f'<a name="trends_table_{county}"></a>Detailed Branch Trends Data:', self.subsection_style))
+                if county == 'combined':
+                    self.add_toc_entry(f"Detailed Branch Trends Data - {area_name}", 2, f"trends_table_combined")
+                    complete_story.append(Paragraph(f'<a name="trends_table_combined"></a>Detailed Branch Trends Data:', self.subsection_style))
+                else:
+                    safe_county = self.create_safe_anchor(county)
+                    self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{safe_county}")
+                    complete_story.append(Paragraph(f'<a name="trends_table_{safe_county}"></a>Detailed Branch Trends Data:', self.subsection_style))
                 trend_data = []
                 trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
                 for _, row in county_trends.iterrows():
@@ -907,11 +935,12 @@ class EnhancedPDFReportGenerator:
             self.current_page += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {area_name}", 1, f"market_concentration_{county}")
-                complete_story.append(Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style))
+                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {area_name}", 1, f"market_concentration_combined")
+                complete_story.append(Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style))
             else:
-                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{county}")
-                market_header = Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
+                safe_county = self.create_safe_anchor(county)
+                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{safe_county}")
+                market_header = Paragraph(f'<a name="market_concentration_{safe_county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
             
             if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
@@ -925,8 +954,13 @@ class EnhancedPDFReportGenerator:
                         
                         # Create a more professional summary section
                         complete_story.append(Spacer(1, 10))
-                        self.add_toc_entry(f"Market Concentration Summary - {county}", 2, f"market_summary_{county}")
-                        complete_story.append(Paragraph(f'<a name="market_summary_{county}"></a>Market Concentration Summary', self.subsection_style))
+                        if county == 'combined':
+                            self.add_toc_entry(f"Market Concentration Summary - {area_name}", 2, f"market_summary_combined")
+                            complete_story.append(Paragraph(f'<a name="market_summary_combined"></a>Market Concentration Summary', self.subsection_style))
+                        else:
+                            safe_county = self.create_safe_anchor(county)
+                            self.add_toc_entry(f"Market Concentration Summary - {county}", 2, f"market_summary_{safe_county}")
+                            complete_story.append(Paragraph(f'<a name="market_summary_{safe_county}"></a>Market Concentration Summary', self.subsection_style))
                         complete_story.append(Spacer(1, 5))
                         if county == 'combined':
                             area_name = ' and '.join(self.counties)
@@ -946,8 +980,13 @@ class EnhancedPDFReportGenerator:
                                 self.summary_box_style
                             ))
                         complete_story.append(Spacer(1, 15))
-                        self.add_toc_entry(f"Top Banks Market Share Data - {county}", 2, f"market_share_table_{county}")
-                        market_share_header = Paragraph(f'<a name="market_share_table_{county}"></a>Top Banks Market Share Data:', self.subsection_style)
+                        if county == 'combined':
+                            self.add_toc_entry(f"Top Banks Market Share Data - {area_name}", 2, f"market_share_table_combined")
+                            market_share_header = Paragraph(f'<a name="market_share_table_combined"></a>Top Banks Market Share Data:', self.subsection_style)
+                        else:
+                            safe_county = self.create_safe_anchor(county)
+                            self.add_toc_entry(f"Top Banks Market Share Data - {county}", 2, f"market_share_table_{safe_county}")
+                            market_share_header = Paragraph(f'<a name="market_share_table_{safe_county}"></a>Top Banks Market Share Data:', self.subsection_style)
                         bank_table_data = []
                         bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
                         for _, row in top_bank_data.iterrows():
@@ -985,9 +1024,15 @@ class EnhancedPDFReportGenerator:
                         ]))
                         complete_story.append(KeepTogether([market_share_header, bank_table, Spacer(1, 15)]))
                         if not county_bank_analysis.empty:
-                            self.add_toc_entry(f"Growth Analysis - {county}", 2, f"growth_analysis_{county}")
-                            growth_header = Paragraph(f'<a name="growth_analysis_{county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
-                                f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
+                            if county == 'combined':
+                                self.add_toc_entry(f"Growth Analysis - {area_name}", 2, f"growth_analysis_combined")
+                                growth_header = Paragraph(f'<a name="growth_analysis_combined"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
+                                    f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
+                            else:
+                                safe_county = self.create_safe_anchor(county)
+                                self.add_toc_entry(f"Growth Analysis - {county}", 2, f"growth_analysis_{safe_county}")
+                                growth_header = Paragraph(f'<a name="growth_analysis_{safe_county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
+                                    f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
                             growth_data = []
                             growth_data.append(['Bank', f'Branches\n({self.years[0]})', f'Branches\n({self.years[-1]})', f'Absolute\nChange', f'Percentage\nChange %'])
                             for _, row in county_bank_analysis.iterrows():
@@ -1027,8 +1072,13 @@ class EnhancedPDFReportGenerator:
                             if ai_analysis['community_impact']:
                                 complete_story.extend(self.format_ai_content(ai_analysis['community_impact']))
                                 complete_story.append(Spacer(1, 15))
-                            self.add_toc_entry(f"Community Impact Comparison Data - {county}", 2, f"community_impact_table_{county}")
-                            community_impact_header = Paragraph(f'<a name="community_impact_table_{county}"></a>Community Impact Comparison Data:', self.subsection_style)
+                            if county == 'combined':
+                                self.add_toc_entry(f"Community Impact Comparison Data - {area_name}", 2, f"community_impact_table_combined")
+                                community_impact_header = Paragraph(f'<a name="community_impact_table_combined"></a>Community Impact Comparison Data:', self.subsection_style)
+                            else:
+                                safe_county = self.create_safe_anchor(county)
+                                self.add_toc_entry(f"Community Impact Comparison Data - {county}", 2, f"community_impact_table_{safe_county}")
+                                community_impact_header = Paragraph(f'<a name="community_impact_table_{safe_county}"></a>Community Impact Comparison Data:', self.subsection_style)
                             comparison_data = []
                             comparison_data.append(['Bank', 'LMI %', 'MMCT %', 'Both %', 'LMI vs\nAvg', 'MMCT vs\nAvg'])
                             for _, row in bank_analysis[county].iterrows():
