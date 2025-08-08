@@ -190,6 +190,11 @@ class AIAnalyzer:
 
         Data: {json.dumps(trends_json, indent=2)} | {json.dumps(market_shares_json, indent=2)}
 
+        IMPORTANT DEFINITIONS:
+        - LMICT = Low-to-Moderate Income Census Tracts (areas with median family income below 80% of area median)
+        - MMCT = Majority-Minority Census Tracts (areas where minority populations represent more than 50% of total population)
+        - LMI/MMCT = Branches serving both low-to-moderate income and majority-minority communities
+
         Focus on:
         - Key trends in branch counts
         - Market concentration among major banks
@@ -220,6 +225,11 @@ class AIAnalyzer:
 
         Data: {json.dumps(trends_json, indent=2)} | {json.dumps(market_shares_json, indent=2)}
 
+        IMPORTANT DEFINITIONS:
+        - LMICT = Low-to-Moderate Income Census Tracts (areas with median family income below 80% of area median)
+        - MMCT = Majority-Minority Census Tracts (areas where minority populations represent more than 50% of total population)
+        - LMI/MMCT = Branches serving both low-to-moderate income and majority-minority communities
+
         Focus on:
         - Most significant trends and patterns
         - MMCT changes around 2022 (2020 census effect)
@@ -247,6 +257,11 @@ class AIAnalyzer:
         Analyze overall branch trends for {county} from {years[0]} to {years[-1]}:
 
         Data: {json.dumps(trends_json, indent=2)}
+
+        IMPORTANT DEFINITIONS:
+        - LMICT = Low-to-Moderate Income Census Tracts (areas with median family income below 80% of area median)
+        - MMCT = Majority-Minority Census Tracts (areas where minority populations represent more than 50% of total population)
+        - LMI/MMCT = Branches serving both low-to-moderate income and majority-minority communities
 
         Focus on:
         - Overall branch count trends and year-over-year changes
@@ -279,6 +294,11 @@ class AIAnalyzer:
 
         Data: {json.dumps(market_shares_json, indent=2)} | {json.dumps(bank_analysis_json, indent=2)}
 
+        IMPORTANT DEFINITIONS:
+        - LMICT = Low-to-Moderate Income Census Tracts (areas with median family income below 80% of area median)
+        - MMCT = Majority-Minority Census Tracts (areas where minority populations represent more than 50% of total population)
+        - LMI/MMCT = Branches serving both low-to-moderate income and majority-minority communities
+
         Focus on:
         - Market concentration patterns among major banks
         - Performance differences in serving LMICT, MMCT, and LMI/MMCT communities
@@ -310,6 +330,11 @@ class AIAnalyzer:
 
         Data: {json.dumps(market_shares_json, indent=2)} | {json.dumps(comparisons_json, indent=2)}
 
+        IMPORTANT DEFINITIONS:
+        - LMICT = Low-to-Moderate Income Census Tracts (areas with median family income below 80% of area median)
+        - MMCT = Majority-Minority Census Tracts (areas where minority populations represent more than 50% of total population)
+        - LMI/MMCT = Branches serving both low-to-moderate income and majority-minority communities
+
         Focus on:
         - How banks serve different community types (LMICT, MMCT, LMI/MMCT)
         - Bank performance compared to county averages
@@ -340,6 +365,11 @@ class AIAnalyzer:
         Generate conclusion for {county} analysis from {years[0]} to {years[-1]}:
 
         Data: {json.dumps(trends_json, indent=2)} | {json.dumps(market_shares_json, indent=2)}
+
+        IMPORTANT DEFINITIONS:
+        - LMICT = Low-to-Moderate Income Census Tracts (areas with median family income below 80% of area median)
+        - MMCT = Majority-Minority Census Tracts (areas where minority populations represent more than 50% of total population)
+        - LMI/MMCT = Branches serving both low-to-moderate income and majority-minority communities
 
         Focus on:
         - Key data patterns using proper formatting
