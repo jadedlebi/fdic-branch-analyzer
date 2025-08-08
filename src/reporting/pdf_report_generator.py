@@ -29,7 +29,7 @@ class TOCEntry:
         self.title = title
         self.level = level  # 1 = section, 2 = subsection, 3 = sub-subsection
         self.page = page
-        # Create a safe anchor name if none provided
+        # Create a safe anchor name if none provided, otherwise use the provided anchor as-is
         if anchor is None:
             import re
             safe_anchor = re.sub(r'[^a-zA-Z0-9_]', '_', title)
@@ -37,12 +37,8 @@ class TOCEntry:
             safe_anchor = safe_anchor.strip('_')  # Remove leading/trailing underscores
             self.anchor = safe_anchor
         else:
-            # Ensure the provided anchor is also safe
-            import re
-            safe_anchor = re.sub(r'[^a-zA-Z0-9_]', '_', anchor)
-            safe_anchor = re.sub(r'_+', '_', safe_anchor)  # Replace multiple underscores with single
-            safe_anchor = safe_anchor.strip('_')  # Remove leading/trailing underscores
-            self.anchor = safe_anchor
+            # Use the provided anchor as-is since it should already be safe
+            self.anchor = anchor
 
 
 class EnhancedPDFReportGenerator:
@@ -943,6 +939,7 @@ class EnhancedPDFReportGenerator:
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {area_name}", 1, f"market_concentration_combined")
                 complete_story.append(Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style))
             else:
+                # Create safe county name once and reuse it
                 safe_county = self.create_safe_anchor(county)
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{safe_county}")
                 market_header = Paragraph(f'<a name="market_concentration_{safe_county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
