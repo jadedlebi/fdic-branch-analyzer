@@ -244,24 +244,44 @@ class EnhancedPDFReportGenerator:
                 clean_title = clean_title.split(" - ")[0]
             
             if entry.level == 1:  # Section
-                # Create clickable link with right-justified page number
-                link_text = f'<link href="#{entry.anchor}">{clean_title}</link>'
-                toc_story.append(Paragraph(link_text, self.toc_section_style))
-                # Add right-justified page number
-                page_text = f'<para align="right">Page {entry.page}</para>'
-                toc_story.append(Paragraph(page_text, self.toc_section_style))
+                # Create a table row with title and page number
+                toc_data = [[
+                    Paragraph(f'<link href="#{entry.anchor}">{clean_title}</link>', self.toc_section_style),
+                    Paragraph(f'Page {entry.page}', ParagraphStyle('TOCPage', parent=self.toc_section_style, alignment=TA_RIGHT))
+                ]]
+                toc_table = Table(toc_data, colWidths=[4*inch, 1*inch])
+                toc_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                    ('TOPPADDING', (0, 0), (-1, -1), 2),
+                ]))
+                toc_story.append(toc_table)
             elif entry.level == 2:  # Subsection
-                link_text = f'<link href="#{entry.anchor}">{clean_title}</link>'
-                toc_story.append(Paragraph(link_text, self.toc_subsection_style))
-                # Add right-justified page number
-                page_text = f'<para align="right">Page {entry.page}</para>'
-                toc_story.append(Paragraph(page_text, self.toc_subsection_style))
+                # Create a table row with title and page number
+                toc_data = [[
+                    Paragraph(f'<link href="#{entry.anchor}">{clean_title}</link>', self.toc_subsection_style),
+                    Paragraph(f'Page {entry.page}', ParagraphStyle('TOCPage', parent=self.toc_subsection_style, alignment=TA_RIGHT))
+                ]]
+                toc_table = Table(toc_data, colWidths=[4*inch, 1*inch])
+                toc_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                    ('TOPPADDING', (0, 0), (-1, -1), 2),
+                ]))
+                toc_story.append(toc_table)
             elif entry.level == 3:  # Table/Figure
-                link_text = f'<link href="#{entry.anchor}">{clean_title}</link>'
-                toc_story.append(Paragraph(link_text, self.toc_table_style))
-                # Add right-justified page number
-                page_text = f'<para align="right">Page {entry.page}</para>'
-                toc_story.append(Paragraph(page_text, self.toc_table_style))
+                # Create a table row with title and page number
+                toc_data = [[
+                    Paragraph(f'<link href="#{entry.anchor}">{clean_title}</link>', self.toc_table_style),
+                    Paragraph(f'Page {entry.page}', ParagraphStyle('TOCPage', parent=self.toc_table_style, alignment=TA_RIGHT))
+                ]]
+                toc_table = Table(toc_data, colWidths=[4*inch, 1*inch])
+                toc_table.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                    ('TOPPADDING', (0, 0), (-1, -1), 2),
+                ]))
+                toc_story.append(toc_table)
         
         return toc_story
     
@@ -1123,8 +1143,8 @@ class EnhancedPDFReportGenerator:
                                     bank_lmi = bank_current.iloc[0]['lmict_pct']
                                     bank_mmct = bank_current.iloc[0]['mmct_pct']
                                     bank_both = min(bank_lmi, bank_mmct) if bank_lmi > 0 and bank_mmct > 0 else 0
-                                    lmi_vs_avg = f"<color='green'>▲</color>" if bank_lmi > county_comparisons['county_avg_lmict'] else f"<color='red'>▼</color>" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
-                                    mmct_vs_avg = f"<color='green'>▲</color>" if bank_mmct > county_comparisons['county_avg_mmct'] else f"<color='red'>▼</color>" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
+                                    lmi_vs_avg = "▲" if bank_lmi > county_comparisons['county_avg_lmict'] else "▼" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
+                                    mmct_vs_avg = "▲" if bank_mmct > county_comparisons['county_avg_mmct'] else "▼" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
                                     comparison_data.append([
                                         Paragraph(self.to_proper_case(row['bank_name']), ParagraphStyle(
                                             'BankName',
