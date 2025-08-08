@@ -82,7 +82,7 @@ class EnhancedPDFReportGenerator:
             print(f"Warning: AI analyzer initialization failed: {e}. Using fallback content.")
             self.ai_analyzer = None
         self.toc_entries = []  # Track table of contents entries
-        self.current_page = 1  # Track current page number
+        self.page_breaks_count = 0  # Track number of page breaks
         
     def setup_enhanced_styles(self):
         """Setup enhanced, professional paragraph styles for the report."""
@@ -225,7 +225,12 @@ class EnhancedPDFReportGenerator:
 
     def add_toc_entry(self, title: str, level: int, anchor: str = None):
         """Add a table of contents entry."""
-        entry = TOCEntry(title, level, self.current_page, anchor)
+        # Calculate page number based on page breaks and TOC insertion
+        # Cover page is page 1, TOC is page 2, then content starts at page 3
+        # Each PageBreak adds one page, and TOC insertion adds +1 to all content pages
+        # Removed extra PageBreak after TOC, so offset is now +1 instead of +2
+        page_number = self.page_breaks_count + 1  # +1 because: cover(1) + toc(2) + content offset(-1)
+        entry = TOCEntry(title, level, page_number, anchor)
         self.toc_entries.append(entry)
         
     def create_toc_page(self) -> List:
@@ -285,6 +290,17 @@ class EnhancedPDFReportGenerator:
         
         return toc_story
     
+    def update_toc_page_numbers(self, doc):
+        """Update TOC entries with actual page numbers from the document."""
+        # Get the actual page numbers for each anchor
+        for entry in self.toc_entries:
+            if hasattr(doc, 'pageRefs') and entry.anchor in doc.pageRefs:
+                entry.page = doc.pageRefs[entry.anchor]
+            else:
+                # Fallback: estimate page number based on content position
+                # This is a rough estimate and may need adjustment
+                entry.page = max(1, entry.page)  # Ensure minimum page number
+    
     def add_page_number(self, canvas, doc):
         """Add page numbers to the bottom center of each page."""
         page_num = canvas.getPageNumber()
@@ -329,6 +345,72 @@ class EnhancedPDFReportGenerator:
             return text
         return text.title()
     
+    def to_all_caps(self, text: str) -> str:
+        """Convert text to all caps for bank names in tables."""
+        if not text:
+            return text
+        return text.upper()
+    
+    def format_bank_name_narrative(self, text: str) -> str:
+        """Format bank names for narrative text - proper case except for acronyms."""
+        if not text:
+            return text
+        
+        # Common bank name patterns that should be preserved
+        common_patterns = {
+            'JPMORGAN': 'JPMorgan',
+            'CHASE': 'Chase',
+            'WELLS': 'Wells',
+            'FARGO': 'Fargo',
+            'PNC': 'PNC',
+            'BANK': 'Bank',
+            'NATIONAL': 'National',
+            'ASSOCIATION': 'Association',
+            'CORP': 'Corp',
+            'CORPORATION': 'Corporation',
+            'TRUST': 'Trust',
+            'COMPANY': 'Company',
+            'CO': 'Co',
+            'INC': 'Inc',
+            'LLC': 'LLC',
+            'LTD': 'Ltd',
+            'OF': 'of',
+            'THE': 'the',
+            'AND': 'and',
+            'AMERICA': 'America',
+            'FIRST': 'First',
+            'COMMUNITY': 'Community',
+            'REGIONAL': 'Regional',
+            'US': 'US',
+            'SMALL': 'Small'
+        }
+        
+        # Split the text into words
+        words = text.split()
+        formatted_words = []
+        
+        for i, word in enumerate(words):
+            word_upper = word.upper()
+            
+            # Check if this word matches a known pattern
+            if word_upper in common_patterns:
+                formatted_words.append(common_patterns[word_upper])
+            # Check if this word is likely an acronym (all caps or contains numbers)
+            elif word.isupper() or any(char.isdigit() for char in word):
+                # Keep acronyms in uppercase
+                formatted_words.append(word)
+            elif len(word) <= 3 and word.isupper():
+                # Short words in all caps are likely acronyms
+                formatted_words.append(word)
+            elif any(char.isupper() for char in word[1:]) and not word.isupper():
+                # Words with internal capitals (like JPMorgan) - preserve the pattern
+                formatted_words.append(word)
+            else:
+                # Regular words get proper case
+                formatted_words.append(word.title())
+        
+        return ' '.join(formatted_words)
+    
     def convert_bank_names_to_proper_case(self, text: str) -> str:
         """Convert bank names in text to proper case while preserving other formatting."""
         if not text:
@@ -344,7 +426,7 @@ class EnhancedPDFReportGenerator:
         converted_text = text
         for bank_name in bank_names:
             if bank_name in text:
-                converted_text = converted_text.replace(bank_name, self.to_proper_case(bank_name))
+                converted_text = converted_text.replace(bank_name, self.format_bank_name_narrative(bank_name))
         
         return converted_text
     
@@ -770,7 +852,7 @@ class EnhancedPDFReportGenerator:
         complete_story.append(Spacer(1, 30))
         complete_story.append(Paragraph(f"Report Generated: {datetime.now().strftime('%B %d, %Y')}", self.body_style))
         complete_story.append(PageBreak())
-        self.current_page += 1  # Cover page is page 1
+        self.page_breaks_count += 1
         
         # Calculate all enhanced data
         trends = self.calculate_enhanced_trends()
@@ -858,7 +940,7 @@ class EnhancedPDFReportGenerator:
                 
                 # Executive Summary Section
                 complete_story.append(PageBreak())
-                self.current_page += 1
+                self.page_breaks_count += 1
                 if county == 'combined':
                     area_name = ' and '.join(self.counties)
                     self.add_toc_entry(f"Executive Summary - {area_name}", 1, f"exec_summary_combined")
@@ -874,9 +956,9 @@ class EnhancedPDFReportGenerator:
                 complete_story.append(exec_header)
                 complete_story.append(Spacer(1, 20))
                 
-            # Key Findings Section
-            complete_story.append(PageBreak())
-            self.current_page += 1
+                # Key Findings Section
+                complete_story.append(PageBreak())
+                self.page_breaks_count += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
                 self.add_toc_entry(f"Key Findings - {area_name}", 1, f"key_findings_combined")
@@ -895,7 +977,7 @@ class EnhancedPDFReportGenerator:
             
             # Understanding the Data Section
             complete_story.append(PageBreak())
-            self.current_page += 1
+            self.page_breaks_count += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
                 self.add_toc_entry(f"Understanding the Data - {area_name}", 1, f"data_understanding_combined")
@@ -931,7 +1013,7 @@ class EnhancedPDFReportGenerator:
             
             # Overall Branch Trends Section
             complete_story.append(PageBreak())
-            self.current_page += 1
+            self.page_breaks_count += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
                 self.add_toc_entry(f"Overall Branch Trends - {area_name}", 1, f"branch_trends_combined")
@@ -988,7 +1070,7 @@ class EnhancedPDFReportGenerator:
             
             # Market Concentration Section
             complete_story.append(PageBreak())
-            self.current_page += 1
+            self.page_breaks_count += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {area_name}", 1, f"market_concentration_combined")
@@ -1047,7 +1129,7 @@ class EnhancedPDFReportGenerator:
                         bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
                         for _, row in top_bank_data.iterrows():
                             bank_table_data.append([
-                                Paragraph(self.to_proper_case(row['bank_name']), ParagraphStyle(
+                                Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
                                     'BankName',
                                     parent=self.body_style,
                                     alignment=TA_CENTER,
@@ -1093,7 +1175,7 @@ class EnhancedPDFReportGenerator:
                             growth_data.append(['Bank', f'Branches\n({self.years[0]})', f'Branches\n({self.years[-1]})', f'Absolute\nChange', f'Percentage\nChange %'])
                             for _, row in county_bank_analysis.iterrows():
                                 growth_data.append([
-                                    Paragraph(self.to_proper_case(row['bank_name']), ParagraphStyle(
+                                    Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
                                         'BankName',
                                         parent=self.body_style,
                                         alignment=TA_CENTER,
@@ -1146,7 +1228,7 @@ class EnhancedPDFReportGenerator:
                                     lmi_vs_avg = "▲" if bank_lmi > county_comparisons['county_avg_lmict'] else "▼" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
                                     mmct_vs_avg = "▲" if bank_mmct > county_comparisons['county_avg_mmct'] else "▼" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
                                     comparison_data.append([
-                                        Paragraph(self.to_proper_case(row['bank_name']), ParagraphStyle(
+                                        Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
                                             'BankName',
                                             parent=self.body_style,
                                             alignment=TA_CENTER,
@@ -1183,7 +1265,7 @@ class EnhancedPDFReportGenerator:
         
         # Methodology and Technical Notes Section
         complete_story.append(PageBreak())
-        self.current_page += 1
+        self.page_breaks_count += 1
         self.add_toc_entry("Methodology and Technical Notes", 1, "methodology")
         methodology_header = Paragraph('<a name="methodology"></a>Methodology and Technical Notes', self.section_style)
         methodology_content = [
@@ -1236,7 +1318,6 @@ class EnhancedPDFReportGenerator:
         
         # Add TOC page after cover page
         final_story.extend(toc_story)
-        final_story.append(PageBreak())
         
         # Add all remaining content
         final_story.extend(complete_story[cover_page_end:])
