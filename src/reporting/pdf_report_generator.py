@@ -222,13 +222,13 @@ class EnhancedPDFReportGenerator:
         for entry in self.toc_entries:
             if entry.level == 1:  # Section
                 # Create clickable link with page number
-                link_text = f'<link href="#{entry.anchor}">{entry.title}</link>'
+                link_text = f'<link href="#{entry.anchor}">{entry.title}</link> <i>Page {entry.page}</i>'
                 toc_story.append(Paragraph(link_text, self.toc_section_style))
             elif entry.level == 2:  # Subsection
-                link_text = f'<link href="#{entry.anchor}">{entry.title}</link>'
+                link_text = f'<link href="#{entry.anchor}">{entry.title}</link> <i>Page {entry.page}</i>'
                 toc_story.append(Paragraph(link_text, self.toc_subsection_style))
             elif entry.level == 3:  # Table/Figure
-                link_text = f'<link href="#{entry.anchor}">{entry.title}</link>'
+                link_text = f'<link href="#{entry.anchor}">{entry.title}</link> <i>Page {entry.page}</i>'
                 toc_story.append(Paragraph(link_text, self.toc_table_style))
         
         return toc_story
@@ -270,6 +270,31 @@ class EnhancedPDFReportGenerator:
     def format_year(self, year: int) -> str:
         """Format year as integer with no decimals."""
         return str(int(year))
+    
+    def to_proper_case(self, text: str) -> str:
+        """Convert text to proper case for bank names in narrative text."""
+        if not text:
+            return text
+        return text.title()
+    
+    def convert_bank_names_to_proper_case(self, text: str) -> str:
+        """Convert bank names in text to proper case while preserving other formatting."""
+        if not text:
+            return text
+        
+        # Get unique bank names from the data
+        bank_names = set()
+        for county in self.counties:
+            county_data = self.data[self.data['county_state'] == county]
+            bank_names.update(county_data['bank_name'].unique())
+        
+        # Convert each bank name to proper case in the text
+        converted_text = text
+        for bank_name in bank_names:
+            if bank_name in text:
+                converted_text = converted_text.replace(bank_name, self.to_proper_case(bank_name))
+        
+        return converted_text
     
     def calculate_enhanced_trends(self) -> Dict[str, pd.DataFrame]:
         """Calculate comprehensive year-over-year trends for each county."""
@@ -526,8 +551,8 @@ class EnhancedPDFReportGenerator:
                 for line in lines:
                     line = line.strip()
                     if line:
-                        # Format numbered items
-                        formatted_line = f"• {line}"
+                        # Format numbered items and convert bank names to proper case
+                        formatted_line = f"• {self.convert_bank_names_to_proper_case(line)}"
                         formatted_content.append(Paragraph(formatted_line, self.numbered_style))
                 formatted_content.append(Spacer(1, 8))
                 
@@ -538,9 +563,9 @@ class EnhancedPDFReportGenerator:
                 for line in lines:
                     line = line.strip()
                     if line:
-                        # Clean up bullet point markers
+                        # Clean up bullet point markers and convert bank names to proper case
                         line = re.sub(r'^[•\-*]\s*', '', line)
-                        formatted_line = f"• {line}"
+                        formatted_line = f"• {self.convert_bank_names_to_proper_case(line)}"
                         formatted_content.append(Paragraph(formatted_line, self.bullet_style))
                 formatted_content.append(Spacer(1, 8))
                 
@@ -557,19 +582,19 @@ class EnhancedPDFReportGenerator:
                 if section.startswith('**') and section.endswith('**') and section.count('**') == 2:
                     # Remove the outer ** and treat as normal paragraph
                     section = section[2:-2].strip()
-                    formatted_content.append(Paragraph(section, self.body_style))
+                    formatted_content.append(Paragraph(self.convert_bank_names_to_proper_case(section), self.body_style))
                 else:
                     # Handle inline bold text properly
                     # Replace **text** with <b>text</b> for inline bold
                     formatted_section = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', section)
                     # Replace *text* with <b>text</b> for single asterisk bold (if not already handled)
                     formatted_section = re.sub(r'(?<!\*)\*([^*]+)\*(?!\*)', r'<b>\1</b>', formatted_section)
-                    formatted_content.append(Paragraph(formatted_section, self.body_style))
+                    formatted_content.append(Paragraph(self.convert_bank_names_to_proper_case(formatted_section), self.body_style))
                 formatted_content.append(Spacer(1, 8))
                 
             else:
                 # Regular paragraph
-                formatted_content.append(Paragraph(section, self.body_style))
+                formatted_content.append(Paragraph(self.convert_bank_names_to_proper_case(section), self.body_style))
                 formatted_content.append(Spacer(1, 8))
         
         return formatted_content
@@ -599,16 +624,16 @@ class EnhancedPDFReportGenerator:
                 
             # Check if this is a numbered item
             if re.match(r'^\d+\.', line):
-                # Format numbered items
-                formatted_content.append(Paragraph(line, self.numbered_style))
+                # Format numbered items and convert bank names to proper case
+                formatted_content.append(Paragraph(self.convert_bank_names_to_proper_case(line), self.numbered_style))
             elif line.startswith('•') or line.startswith('-') or line.startswith('*'):
-                # Format bullet points
+                # Format bullet points and convert bank names to proper case
                 line = re.sub(r'^[•\-*]\s*', '', line)
-                formatted_line = f"• {line}"
+                formatted_line = f"• {self.convert_bank_names_to_proper_case(line)}"
                 formatted_content.append(Paragraph(formatted_line, self.bullet_style))
             else:
-                # Regular text
-                formatted_content.append(Paragraph(line, self.body_style))
+                # Regular text and convert bank names to proper case
+                formatted_content.append(Paragraph(self.convert_bank_names_to_proper_case(line), self.body_style))
         
         return formatted_content
     
@@ -668,8 +693,58 @@ class EnhancedPDFReportGenerator:
         bank_analysis = self.analyze_enhanced_bank_growth(top_banks)
         comparisons = self.calculate_enhanced_comparisons(bank_analysis)
         
-        # Generate enhanced AI analysis for each county (narrative only)
-        for county in self.counties:
+        # Combine data for all counties if multiple counties
+        if len(self.counties) > 1:
+            # Combine trends data
+            combined_trends = pd.DataFrame()
+            for county in self.counties:
+                if county in trends:
+                    county_trends = trends[county].copy()
+                    county_trends['county'] = county
+                    combined_trends = pd.concat([combined_trends, county_trends], ignore_index=True)
+            
+            # Combine market shares data
+            combined_market_shares = pd.DataFrame()
+            for county in self.counties:
+                if county in market_shares:
+                    county_market_shares = market_shares[county].copy()
+                    county_market_shares['county'] = county
+                    combined_market_shares = pd.concat([combined_market_shares, county_market_shares], ignore_index=True)
+            
+            # Combine bank analysis data
+            combined_bank_analysis = pd.DataFrame()
+            for county in self.counties:
+                if county in bank_analysis:
+                    county_bank_analysis = bank_analysis[county].copy()
+                    county_bank_analysis['county'] = county
+                    combined_bank_analysis = pd.concat([combined_bank_analysis, county_bank_analysis], ignore_index=True)
+            
+            # Generate AI analysis for combined data
+            combined_comparisons = {}
+            for county in self.counties:
+                if county in comparisons:
+                    combined_comparisons[county] = comparisons[county]
+            
+            ai_analysis = self.generate_enhanced_ai_analysis(
+                {'county': ' and '.join(self.counties)},
+                combined_trends,
+                combined_market_shares,
+                combined_bank_analysis,
+                combined_comparisons
+            )
+            
+            # Use combined data for the rest of the report
+            trends = {'combined': combined_trends}
+            market_shares = {'combined': combined_market_shares}
+            bank_analysis = {'combined': combined_bank_analysis}
+            comparisons = combined_comparisons
+            counties_to_process = ['combined']
+        else:
+            # Single county - use original data
+            counties_to_process = self.counties
+        
+        # Generate enhanced AI analysis for each county/combined area (narrative only)
+        for county in counties_to_process:
             # Skip counties that don't have data
             if county not in trends or county not in market_shares:
                 print(f"Warning: No data available for county: {county}")
@@ -679,59 +754,105 @@ class EnhancedPDFReportGenerator:
             county_market_shares = market_shares[county]
             county_bank_analysis = bank_analysis.get(county, pd.DataFrame())
             county_comparisons = comparisons.get(county, {})
-            ai_analysis = self.generate_enhanced_ai_analysis(
-                {'county': county},
-                county_trends,
-                county_market_shares,
-                county_bank_analysis,
-                county_comparisons
-            )
+            if county == 'combined':
+                # Use the already generated AI analysis for combined data
+                pass
+            else:
+                ai_analysis = self.generate_enhanced_ai_analysis(
+                    {'county': county},
+                    county_trends,
+                    county_market_shares,
+                    county_bank_analysis,
+                    county_comparisons
+                )
             
             # Executive Summary Section
             complete_story.append(PageBreak())
             self.current_page += 1
-            self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{county}")
-            complete_story.append(Paragraph(f'<a name="exec_summary_{county}"></a>Executive Summary', self.section_style))
+            if county == 'combined':
+                area_name = ' and '.join(self.counties)
+                self.add_toc_entry(f"Executive Summary - {area_name}", 1, f"exec_summary_{county}")
+                exec_header = Paragraph(f'<a name="exec_summary_{county}"></a>Executive Summary', self.section_style)
+            else:
+                self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{county}")
+                exec_header = Paragraph(f'<a name="exec_summary_{county}"></a>Executive Summary', self.section_style)
+            
             if ai_analysis['executive_summary']:
-                complete_story.extend(self.format_ai_content(ai_analysis['executive_summary']))
-            complete_story.append(Spacer(1, 20))
+                exec_content = self.format_ai_content(ai_analysis['executive_summary'])
+                complete_story.append(KeepTogether([exec_header] + exec_content + [Spacer(1, 20)]))
+            else:
+                complete_story.append(exec_header)
+                complete_story.append(Spacer(1, 20))
                 
             # Key Findings Section
             complete_story.append(PageBreak())
             self.current_page += 1
-            self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{county}")
-            complete_story.append(Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style))
+            if county == 'combined':
+                area_name = ' and '.join(self.counties)
+                self.add_toc_entry(f"Key Findings - {area_name}", 1, f"key_findings_{county}")
+                complete_story.append(Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style))
+            else:
+                self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{county}")
+                complete_story.append(Paragraph(f'<a name="key_findings_{county}"></a>Key Findings', self.section_style))
             if ai_analysis['key_findings']:
-                complete_story.extend(self.format_key_findings(ai_analysis['key_findings']))
+                key_content = self.format_key_findings(ai_analysis['key_findings'])
+                complete_story.extend(key_content)
             complete_story.append(Spacer(1, 20))
             
             # Understanding the Data Section
             complete_story.append(PageBreak())
             self.current_page += 1
-            self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{county}")
-            complete_story.append(Paragraph(f'<a name="data_understanding_{county}"></a>Understanding the Data', self.section_style))
-            complete_story.append(Paragraph(
-                f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
-                f"We focus on three key metrics:",
-                self.body_style
-            ))
-            complete_story.append(Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style))
-            complete_story.append(Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style))
-            complete_story.append(Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style))
-            complete_story.append(Paragraph(
-                f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
-                f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
-                self.body_style
-            ))
-            complete_story.append(Spacer(1, 20))
+            if county == 'combined':
+                area_name = ' and '.join(self.counties)
+                self.add_toc_entry(f"Understanding the Data - {area_name}", 1, f"data_understanding_{county}")
+                complete_story.append(Paragraph(f'<a name="data_understanding_{county}"></a>Understanding the Data', self.section_style))
+                complete_story.append(Paragraph(
+                    f"This analysis examines bank branch trends in {area_name} from {years_str} using FDIC Summary of Deposits data. "
+                    f"We focus on three key metrics:",
+                    self.body_style
+                ))
+            else:
+                self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{county}")
+                data_header = Paragraph(f'<a name="data_understanding_{county}"></a>Understanding the Data', self.section_style)
+                data_intro = Paragraph(
+                    f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
+                    f"We focus on three key metrics:",
+                    self.body_style
+                )
+            
+            data_bullets = [
+                Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style),
+                Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style),
+                Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style),
+                Paragraph(
+                    f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
+                    f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
+                    self.body_style
+                ),
+                Spacer(1, 20)
+            ]
+            
+            if county == 'combined':
+                complete_story.append(KeepTogether([data_header, data_intro] + data_bullets))
+            else:
+                complete_story.append(KeepTogether([data_header, data_intro] + data_bullets))
             
             # Overall Branch Trends Section
             complete_story.append(PageBreak())
             self.current_page += 1
-            self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{county}")
-            complete_story.append(Paragraph(f'<a name="branch_trends_{county}"></a>Overall Branch Trends', self.section_style))
+            if county == 'combined':
+                area_name = ' and '.join(self.counties)
+                self.add_toc_entry(f"Overall Branch Trends - {area_name}", 1, f"branch_trends_{county}")
+                complete_story.append(Paragraph(f'<a name="branch_trends_{county}"></a>Overall Branch Trends', self.section_style))
+            else:
+                self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{county}")
+                trends_header = Paragraph(f'<a name="branch_trends_{county}"></a>Overall Branch Trends', self.section_style)
+            
             if ai_analysis['overall_trends']:
-                complete_story.extend(self.format_ai_content(ai_analysis['overall_trends']))
+                trends_content = self.format_ai_content(ai_analysis['overall_trends'])
+                complete_story.append(KeepTogether([trends_header] + trends_content + [Spacer(1, 20)]))
+            else:
+                complete_story.append(trends_header)
                 complete_story.append(Spacer(1, 20))
             if not county_trends.empty:
                 self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{county}")
@@ -770,8 +891,15 @@ class EnhancedPDFReportGenerator:
             # Market Concentration Section
             complete_story.append(PageBreak())
             self.current_page += 1
-            self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{county}")
-            complete_story.append(Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style))
+            if county == 'combined':
+                area_name = ' and '.join(self.counties)
+                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {area_name}", 1, f"market_concentration_{county}")
+                complete_story.append(Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style))
+            else:
+                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{county}")
+                market_header = Paragraph(f'<a name="market_concentration_{county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
+                complete_story.append(market_header)
+            
             if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
                     if not top_bank_data.empty:
@@ -787,13 +915,23 @@ class EnhancedPDFReportGenerator:
                         self.add_toc_entry(f"Market Concentration Summary - {county}", 2, f"market_summary_{county}")
                         complete_story.append(Paragraph(f'<a name="market_summary_{county}"></a>Market Concentration Summary', self.subsection_style))
                         complete_story.append(Spacer(1, 5))
-                        complete_story.append(Paragraph(
-                            f"As of {max(self.years)}, {len(top_bank_data)} banks control "
-                            f"{self.format_percentage(top_percentage)} of all branches in {county}, operating "
-                            f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
-                            f"This represents a {len(top_bank_data)}-bank oligopoly in the county's banking sector.",
-                            self.summary_box_style
-                        ))
+                        if county == 'combined':
+                            area_name = ' and '.join(self.counties)
+                            complete_story.append(Paragraph(
+                                f"As of {max(self.years)}, {len(top_bank_data)} banks control "
+                                f"{self.format_percentage(top_percentage)} of all branches in {area_name}, operating "
+                                f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
+                                f"This represents a {len(top_bank_data)}-bank oligopoly in the area's banking sector.",
+                                self.summary_box_style
+                            ))
+                        else:
+                            complete_story.append(Paragraph(
+                                f"As of {max(self.years)}, {len(top_bank_data)} banks control "
+                                f"{self.format_percentage(top_percentage)} of all branches in {county}, operating "
+                                f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
+                                f"This represents a {len(top_bank_data)}-bank oligopoly in the county's banking sector.",
+                                self.summary_box_style
+                            ))
                         complete_story.append(Spacer(1, 15))
                         self.add_toc_entry(f"Top Banks Market Share Data - {county}", 2, f"market_share_table_{county}")
                         complete_story.append(Paragraph(f'<a name="market_share_table_{county}"></a>Top Banks Market Share Data:', self.subsection_style))
@@ -801,7 +939,7 @@ class EnhancedPDFReportGenerator:
                         bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
                         for _, row in top_bank_data.iterrows():
                             bank_table_data.append([
-                                Paragraph(row['bank_name'], ParagraphStyle(
+                                Paragraph(self.to_proper_case(row['bank_name']), ParagraphStyle(
                                     'BankName',
                                     parent=self.body_style,
                                     alignment=TA_CENTER,
@@ -841,7 +979,7 @@ class EnhancedPDFReportGenerator:
                             growth_data.append(['Bank', f'Branches\n({self.years[0]})', f'Branches\n({self.years[-1]})', f'Absolute\nChange', f'Percentage\nChange %'])
                             for _, row in county_bank_analysis.iterrows():
                                 growth_data.append([
-                                    Paragraph(row['bank_name'], ParagraphStyle(
+                                    Paragraph(self.to_proper_case(row['bank_name']), ParagraphStyle(
                                         'BankName',
                                         parent=self.body_style,
                                         alignment=TA_CENTER,
@@ -886,10 +1024,10 @@ class EnhancedPDFReportGenerator:
                                     bank_lmi = bank_current.iloc[0]['lmict_pct']
                                     bank_mmct = bank_current.iloc[0]['mmct_pct']
                                     bank_both = min(bank_lmi, bank_mmct) if bank_lmi > 0 and bank_mmct > 0 else 0
-                                    lmi_vs_avg = "▲" if bank_lmi > county_comparisons['county_avg_lmict'] else "▼" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
-                                    mmct_vs_avg = "▲" if bank_mmct > county_comparisons['county_avg_mmct'] else "▼" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
+                                    lmi_vs_avg = f"<font color='green'>▲</font>" if bank_lmi > county_comparisons['county_avg_lmict'] else f"<font color='red'>▼</font>" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
+                                    mmct_vs_avg = f"<font color='green'>▲</font>" if bank_mmct > county_comparisons['county_avg_mmct'] else f"<font color='red'>▼</font>" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
                                     comparison_data.append([
-                                        Paragraph(row['bank_name'], ParagraphStyle(
+                                        Paragraph(self.to_proper_case(row['bank_name']), ParagraphStyle(
                                             'BankName',
                                             parent=self.body_style,
                                             alignment=TA_CENTER,
@@ -922,27 +1060,7 @@ class EnhancedPDFReportGenerator:
                             ]))
                             complete_story.append(KeepTogether([comparison_table, Spacer(1, 15)]))
             
-            # Conclusion Section
-            complete_story.append(PageBreak())
-            self.current_page += 1
-            self.add_toc_entry(f"Conclusion and Strategic Implications - {county}", 1, f"conclusion_{county}")
-            complete_story.append(Paragraph(f'<a name="conclusion_{county}"></a>Conclusion and Strategic Implications', self.section_style))
-            if ai_analysis['conclusion']:
-                complete_story.extend(self.format_ai_content(ai_analysis['conclusion']))
-            else:
-                if not county_trends.empty:
-                    first_year_total = county_trends['total_branches'].iloc[0]
-                    last_year_total = county_trends['total_branches'].iloc[-1]
-                    total_change = last_year_total - first_year_total
-                    change_direction = "declined" if total_change < 0 else "increased" if total_change > 0 else "remained stable"
-                    complete_story.append(Paragraph(
-                        f"In summary, {county} experienced a {change_direction} in bank branches from {self.years[0]} to {self.years[-1]}, "
-                        f"changing from {self.format_number(first_year_total)} to {self.format_number(last_year_total)} branches. "
-                        f"These trends reflect the evolving landscape of banking in {county}: a more consolidated branch network "
-                        f"that is increasingly concentrated among major institutions while maintaining varying levels of commitment "
-                        f"to serving diverse and underserved communities.",
-                        self.body_style
-                    ))
+
         
         # Methodology and Technical Notes Section
         complete_story.append(PageBreak())
