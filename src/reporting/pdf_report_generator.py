@@ -804,9 +804,8 @@ class EnhancedPDFReportGenerator:
                 self.add_toc_entry(f"Executive Summary - {area_name}", 1, f"exec_summary_combined")
                 exec_header = Paragraph(f'<a name="exec_summary_combined"></a>Executive Summary', self.section_style)
             else:
-                # Create safe anchor name
-                safe_county = re.sub(r'[^a-zA-Z0-9_]', '_', county)
-                safe_county = re.sub(r'_+', '_', safe_county).strip('_')
+                # Create safe county name once and reuse it throughout this function
+                safe_county = self.create_safe_anchor(county)
                 self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{safe_county}")
                 exec_header = Paragraph(f'<a name="exec_summary_{safe_county}"></a>Executive Summary', self.section_style)
             
@@ -825,9 +824,7 @@ class EnhancedPDFReportGenerator:
                 self.add_toc_entry(f"Key Findings - {area_name}", 1, f"key_findings_combined")
                 key_header = Paragraph(f'<a name="key_findings_combined"></a>Key Findings', self.section_style)
             else:
-                # Create safe anchor name
-                safe_county = re.sub(r'[^a-zA-Z0-9_]', '_', county)
-                safe_county = re.sub(r'_+', '_', safe_county).strip('_')
+                # Reuse the safe_county already created above
                 self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{safe_county}")
                 key_header = Paragraph(f'<a name="key_findings_{safe_county}"></a>Key Findings', self.section_style)
             
@@ -851,7 +848,7 @@ class EnhancedPDFReportGenerator:
                     self.body_style
                 ))
             else:
-                safe_county = self.create_safe_anchor(county)
+                # Reuse the safe_county already created above
                 self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{safe_county}")
                 data_header = Paragraph(f'<a name="data_understanding_{safe_county}"></a>Understanding the Data', self.section_style)
                 data_intro = Paragraph(
@@ -882,7 +879,7 @@ class EnhancedPDFReportGenerator:
                 self.add_toc_entry(f"Overall Branch Trends - {area_name}", 1, f"branch_trends_combined")
                 complete_story.append(Paragraph(f'<a name="branch_trends_combined"></a>Overall Branch Trends', self.section_style))
             else:
-                safe_county = self.create_safe_anchor(county)
+                # Reuse the safe_county already created above
                 self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{safe_county}")
                 trends_header = Paragraph(f'<a name="branch_trends_{safe_county}"></a>Overall Branch Trends', self.section_style)
             
@@ -897,7 +894,7 @@ class EnhancedPDFReportGenerator:
                     self.add_toc_entry(f"Detailed Branch Trends Data - {area_name}", 2, f"trends_table_combined")
                     complete_story.append(Paragraph(f'<a name="trends_table_combined"></a>Detailed Branch Trends Data:', self.subsection_style))
                 else:
-                    safe_county = self.create_safe_anchor(county)
+                    # Reuse the safe_county already created above
                     self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{safe_county}")
                     complete_story.append(Paragraph(f'<a name="trends_table_{safe_county}"></a>Detailed Branch Trends Data:', self.subsection_style))
                 trend_data = []
@@ -939,7 +936,7 @@ class EnhancedPDFReportGenerator:
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {area_name}", 1, f"market_concentration_combined")
                 complete_story.append(Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style))
             else:
-                # Create safe county name once and reuse it
+                # Create safe county name once and reuse it throughout this section
                 safe_county = self.create_safe_anchor(county)
                 self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{safe_county}")
                 market_header = Paragraph(f'<a name="market_concentration_{safe_county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
@@ -960,7 +957,7 @@ class EnhancedPDFReportGenerator:
                             self.add_toc_entry(f"Market Concentration Summary - {area_name}", 2, f"market_summary_combined")
                             complete_story.append(Paragraph(f'<a name="market_summary_combined"></a>Market Concentration Summary', self.subsection_style))
                         else:
-                            safe_county = self.create_safe_anchor(county)
+                            # Reuse the safe_county already created above
                             self.add_toc_entry(f"Market Concentration Summary - {county}", 2, f"market_summary_{safe_county}")
                             complete_story.append(Paragraph(f'<a name="market_summary_{safe_county}"></a>Market Concentration Summary', self.subsection_style))
                         complete_story.append(Spacer(1, 5))
@@ -986,7 +983,7 @@ class EnhancedPDFReportGenerator:
                             self.add_toc_entry(f"Top Banks Market Share Data - {area_name}", 2, f"market_share_table_combined")
                             market_share_header = Paragraph(f'<a name="market_share_table_combined"></a>Top Banks Market Share Data:', self.subsection_style)
                         else:
-                            safe_county = self.create_safe_anchor(county)
+                            # Reuse the safe_county already created above
                             self.add_toc_entry(f"Top Banks Market Share Data - {county}", 2, f"market_share_table_{safe_county}")
                             market_share_header = Paragraph(f'<a name="market_share_table_{safe_county}"></a>Top Banks Market Share Data:', self.subsection_style)
                         bank_table_data = []
@@ -1031,7 +1028,7 @@ class EnhancedPDFReportGenerator:
                                 growth_header = Paragraph(f'<a name="growth_analysis_combined"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
                                     f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
                             else:
-                                safe_county = self.create_safe_anchor(county)
+                                # Reuse the safe_county already created above
                                 self.add_toc_entry(f"Growth Analysis - {county}", 2, f"growth_analysis_{safe_county}")
                                 growth_header = Paragraph(f'<a name="growth_analysis_{safe_county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
                                     f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
@@ -1078,7 +1075,7 @@ class EnhancedPDFReportGenerator:
                                 self.add_toc_entry(f"Community Impact Comparison Data - {area_name}", 2, f"community_impact_table_combined")
                                 community_impact_header = Paragraph(f'<a name="community_impact_table_combined"></a>Community Impact Comparison Data:', self.subsection_style)
                             else:
-                                safe_county = self.create_safe_anchor(county)
+                                # Reuse the safe_county already created above
                                 self.add_toc_entry(f"Community Impact Comparison Data - {county}", 2, f"community_impact_table_{safe_county}")
                                 community_impact_header = Paragraph(f'<a name="community_impact_table_{safe_county}"></a>Community Impact Comparison Data:', self.subsection_style)
                             comparison_data = []
