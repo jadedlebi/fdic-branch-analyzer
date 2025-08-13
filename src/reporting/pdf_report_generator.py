@@ -23,24 +23,6 @@ import re
 from src.analysis.gpt_utils import AIAnalyzer
 
 
-class TOCEntry:
-    """Represents a table of contents entry with navigation information."""
-    def __init__(self, title: str, level: int, page: int, anchor: str = None):
-        self.title = title
-        self.level = level  # 1 = section, 2 = subsection, 3 = sub-subsection
-        self.page = page
-        # Create a safe anchor name if none provided, otherwise use the provided anchor as-is
-        if anchor is None:
-            import re
-            safe_anchor = re.sub(r'[^a-zA-Z0-9_]', '_', title)
-            safe_anchor = re.sub(r'_+', '_', safe_anchor)  # Replace multiple underscores with single
-            safe_anchor = safe_anchor.strip('_')  # Remove leading/trailing underscores
-            self.anchor = safe_anchor
-        else:
-            # Use the provided anchor as-is since it should already be safe
-            self.anchor = anchor
-
-
 class EnhancedPDFReportGenerator:
     def __init__(self, data: pd.DataFrame, counties: List[str], years: List[int]):
         """
@@ -81,7 +63,6 @@ class EnhancedPDFReportGenerator:
         except Exception as e:
             print(f"Warning: AI analyzer initialization failed: {e}. Using fallback content.")
             self.ai_analyzer = None
-        self.toc_entries = []  # Track table of contents entries
         self.page_breaks_count = 0  # Track number of page breaks
         
     def setup_enhanced_styles(self):
@@ -176,130 +157,13 @@ class EnhancedPDFReportGenerator:
             spaceBefore=10
         )
         
-        # TOC styles
-        self.toc_title_style = ParagraphStyle(
-            'TOCTitle',
-            parent=self.styles['Heading1'],
-            fontSize=24,
-            spaceAfter=30,
-            alignment=TA_CENTER,
-            textColor=colors.HexColor('#1a365d'),
-            fontName='Helvetica-Bold',
-            leading=28
-        )
-        
-        self.toc_section_style = ParagraphStyle(
-            'TOCSection',
-            parent=self.styles['Normal'],
-            fontSize=12,
-            spaceAfter=8,
-            spaceBefore=15,
-            textColor=colors.HexColor('#2d3748'),
-            fontName='Helvetica-Bold',
-            leading=14
-        )
-        
-        self.toc_subsection_style = ParagraphStyle(
-            'TOCSubsection',
-            parent=self.styles['Normal'],
-            fontSize=10,
-            spaceAfter=6,
-            spaceBefore=8,
-            leftIndent=20,
-            textColor=colors.HexColor('#4a5568'),
-            fontName='Helvetica',
-            leading=12
-        )
-        
-        self.toc_table_style = ParagraphStyle(
-            'TOCTable',
-            parent=self.styles['Normal'],
-            fontSize=9,
-            spaceAfter=4,
-            spaceBefore=4,
-            leftIndent=40,
-            textColor=colors.HexColor('#718096'),
-            fontName='Helvetica',
-            leading=11
-        )
 
-    def add_toc_entry(self, title: str, level: int, anchor: str = None):
-        """Add a table of contents entry."""
-        # Calculate page number based on page breaks and TOC insertion
-        # Cover page is page 1, TOC is page 2, then content starts at page 3
-        # Each PageBreak adds one page, and TOC insertion adds +1 to all content pages
-        # Removed extra PageBreak after TOC, so offset is now +1 instead of +2
-        page_number = self.page_breaks_count + 1  # +1 because: cover(1) + toc(2) + content offset(-1)
-        entry = TOCEntry(title, level, page_number, anchor)
-        self.toc_entries.append(entry)
+
+
         
-    def create_toc_page(self) -> List:
-        """Create the table of contents page."""
-        toc_story = []
-        
-        # TOC Title
-        toc_story.append(Paragraph("Table of Contents", self.toc_title_style))
-        toc_story.append(Spacer(1, 20))
-        
-        # Add TOC entries
-        for entry in self.toc_entries:
-            # Remove county names from titles
-            clean_title = entry.title
-            if " - " in clean_title:
-                clean_title = clean_title.split(" - ")[0]
-            
-            if entry.level == 1:  # Section
-                # Create a table row with title and page number
-                toc_data = [[
-                    Paragraph(f'<link href="#{entry.anchor}">{clean_title}</link>', self.toc_section_style),
-                    Paragraph(f'Page {entry.page}', ParagraphStyle('TOCPage', parent=self.toc_section_style, alignment=TA_RIGHT))
-                ]]
-                toc_table = Table(toc_data, colWidths=[4*inch, 1*inch])
-                toc_table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-                    ('TOPPADDING', (0, 0), (-1, -1), 2),
-                ]))
-                toc_story.append(toc_table)
-            elif entry.level == 2:  # Subsection
-                # Create a table row with title and page number
-                toc_data = [[
-                    Paragraph(f'<link href="#{entry.anchor}">{clean_title}</link>', self.toc_subsection_style),
-                    Paragraph(f'Page {entry.page}', ParagraphStyle('TOCPage', parent=self.toc_subsection_style, alignment=TA_RIGHT))
-                ]]
-                toc_table = Table(toc_data, colWidths=[4*inch, 1*inch])
-                toc_table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-                    ('TOPPADDING', (0, 0), (-1, -1), 2),
-                ]))
-                toc_story.append(toc_table)
-            elif entry.level == 3:  # Table/Figure
-                # Create a table row with title and page number
-                toc_data = [[
-                    Paragraph(f'<link href="#{entry.anchor}">{clean_title}</link>', self.toc_table_style),
-                    Paragraph(f'Page {entry.page}', ParagraphStyle('TOCPage', parent=self.toc_table_style, alignment=TA_RIGHT))
-                ]]
-                toc_table = Table(toc_data, colWidths=[4*inch, 1*inch])
-                toc_table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
-                    ('TOPPADDING', (0, 0), (-1, -1), 2),
-                ]))
-                toc_story.append(toc_table)
-        
-        return toc_story
+
     
-    def update_toc_page_numbers(self, doc):
-        """Update TOC entries with actual page numbers from the document."""
-        # Get the actual page numbers for each anchor
-        for entry in self.toc_entries:
-            if hasattr(doc, 'pageRefs') and entry.anchor in doc.pageRefs:
-                entry.page = doc.pageRefs[entry.anchor]
-            else:
-                # Fallback: estimate page number based on content position
-                # This is a rough estimate and may need adjustment
-                entry.page = max(1, entry.page)  # Ensure minimum page number
+
     
     def add_page_number(self, canvas, doc):
         """Add page numbers to the bottom center of each page."""
@@ -939,110 +803,98 @@ class EnhancedPDFReportGenerator:
                     safe_county = self.create_safe_anchor(county)
                 
                 # Executive Summary Section
+                if county == 'combined':
+                    area_name = ' and '.join(self.counties)
+                    exec_header = Paragraph(f'<a name="exec_summary_combined"></a>Executive Summary', self.section_style)
+                else:
+                    exec_header = Paragraph(f'<a name="exec_summary_{safe_county}"></a>Executive Summary', self.section_style)
+                
+                if ai_analysis['executive_summary']:
+                    exec_content = self.format_ai_content(ai_analysis['executive_summary'])
+                    complete_story.append(KeepTogether([exec_header] + exec_content + [Spacer(1, 20)]))
+                else:
+                    complete_story.append(exec_header)
+                    complete_story.append(Spacer(1, 20))
+                    
+                    # Key Findings Section
+                    complete_story.append(PageBreak())
+                    self.page_breaks_count += 1
+                if county == 'combined':
+                    area_name = ' and '.join(self.counties)
+                    key_header = Paragraph(f'<a name="key_findings_combined"></a>Key Findings', self.section_style)
+                else:
+                    # Reuse the safe_county already created above
+                    key_header = Paragraph(f'<a name="key_findings_{safe_county}"></a>Key Findings', self.section_style)
+                
+                if ai_analysis['key_findings']:
+                    key_content = self.format_key_findings(ai_analysis['key_findings'])
+                    complete_story.append(KeepTogether([key_header] + key_content + [Spacer(1, 20)]))
+                else:
+                    complete_story.append(key_header)
+                    complete_story.append(Spacer(1, 20))
+                
+                # Understanding the Data Section
                 complete_story.append(PageBreak())
                 self.page_breaks_count += 1
                 if county == 'combined':
                     area_name = ' and '.join(self.counties)
-                    self.add_toc_entry(f"Executive Summary - {area_name}", 1, f"exec_summary_combined")
-                    exec_header = Paragraph(f'<a name="exec_summary_combined"></a>Executive Summary', self.section_style)
-                else:
-                    self.add_toc_entry(f"Executive Summary - {county}", 1, f"exec_summary_{safe_county}")
-                    exec_header = Paragraph(f'<a name="exec_summary_{safe_county}"></a>Executive Summary', self.section_style)
-            
-            if ai_analysis['executive_summary']:
-                exec_content = self.format_ai_content(ai_analysis['executive_summary'])
-                complete_story.append(KeepTogether([exec_header] + exec_content + [Spacer(1, 20)]))
-            else:
-                complete_story.append(exec_header)
-                complete_story.append(Spacer(1, 20))
-                
-                # Key Findings Section
-                complete_story.append(PageBreak())
-                self.page_breaks_count += 1
-            if county == 'combined':
-                area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Key Findings - {area_name}", 1, f"key_findings_combined")
-                key_header = Paragraph(f'<a name="key_findings_combined"></a>Key Findings', self.section_style)
-            else:
-                # Reuse the safe_county already created above
-                self.add_toc_entry(f"Key Findings - {county}", 1, f"key_findings_{safe_county}")
-                key_header = Paragraph(f'<a name="key_findings_{safe_county}"></a>Key Findings', self.section_style)
-            
-            if ai_analysis['key_findings']:
-                key_content = self.format_key_findings(ai_analysis['key_findings'])
-                complete_story.append(KeepTogether([key_header] + key_content + [Spacer(1, 20)]))
-            else:
-                complete_story.append(key_header)
-                complete_story.append(Spacer(1, 20))
-            
-            # Understanding the Data Section
-            complete_story.append(PageBreak())
-            self.page_breaks_count += 1
-            if county == 'combined':
-                area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Understanding the Data - {area_name}", 1, f"data_understanding_combined")
-                complete_story.append(Paragraph(f'<a name="data_understanding_combined"></a>Understanding the Data', self.section_style))
-                complete_story.append(Paragraph(
-                    f"This analysis examines bank branch trends in {area_name} from {years_str} using FDIC Summary of Deposits data. "
-                    f"We focus on three key metrics:",
-                    self.body_style
-                ))
-            else:
-                # Reuse the safe_county already created above
-                self.add_toc_entry(f"Understanding the Data - {county}", 1, f"data_understanding_{safe_county}")
-                data_header = Paragraph(f'<a name="data_understanding_{safe_county}"></a>Understanding the Data', self.section_style)
-                data_intro = Paragraph(
-                    f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
-                    f"We focus on three key metrics:",
-                    self.body_style
-                )
-            
-            data_bullets = [
-                Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style),
-                Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style),
-                Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style),
-                Paragraph(
-                    f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
-                    f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
-                    self.body_style
-                ),
-                Spacer(1, 20)
-            ]
-            
-            complete_story.append(KeepTogether([data_header, data_intro] + data_bullets))
-            
-            # Overall Branch Trends Section
-            complete_story.append(PageBreak())
-            self.page_breaks_count += 1
-            if county == 'combined':
-                area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Overall Branch Trends - {area_name}", 1, f"branch_trends_combined")
-                complete_story.append(Paragraph(f'<a name="branch_trends_combined"></a>Overall Branch Trends', self.section_style))
-            else:
-                # Reuse the safe_county already created above
-                self.add_toc_entry(f"Overall Branch Trends - {county}", 1, f"branch_trends_{safe_county}")
-                trends_header = Paragraph(f'<a name="branch_trends_{safe_county}"></a>Overall Branch Trends', self.section_style)
-            
-            if ai_analysis['overall_trends']:
-                trends_content = self.format_ai_content(ai_analysis['overall_trends'])
-                complete_story.append(KeepTogether([trends_header] + trends_content + [Spacer(1, 20)]))
-            else:
-                complete_story.append(trends_header)
-                complete_story.append(Spacer(1, 20))
-            if not county_trends.empty:
-                if county == 'combined':
-                    self.add_toc_entry(f"Detailed Branch Trends Data - {area_name}", 2, f"trends_table_combined")
-                    complete_story.append(Paragraph(f'<a name="trends_table_combined"></a>Detailed Branch Trends Data:', self.subsection_style))
+                    complete_story.append(Paragraph(f'<a name="data_understanding_combined"></a>Understanding the Data', self.section_style))
+                    complete_story.append(Paragraph(
+                        f"This analysis examines bank branch trends in {area_name} from {years_str} using FDIC Summary of Deposits data. "
+                        f"We focus on three key metrics:",
+                        self.body_style
+                    ))
                 else:
                     # Reuse the safe_county already created above
-                    self.add_toc_entry(f"Detailed Branch Trends Data - {county}", 2, f"trends_table_{safe_county}")
-                    complete_story.append(Paragraph(f'<a name="trends_table_{safe_county}"></a>Detailed Branch Trends Data:', self.subsection_style))
-                trend_data = []
-                trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
-                for _, row in county_trends.iterrows():
-                    trend_data.append([
-                        self.format_year(row['year']),
-                        self.format_number(row['total_branches']),
+                    data_header = Paragraph(f'<a name="data_understanding_{safe_county}"></a>Understanding the Data', self.section_style)
+                    data_intro = Paragraph(
+                        f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
+                        f"We focus on three key metrics:",
+                        self.body_style
+                    )
+                
+                data_bullets = [
+                    Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style),
+                    Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style),
+                    Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style),
+                    Paragraph(
+                        f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
+                        f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
+                        self.body_style
+                    ),
+                    Spacer(1, 20)
+                ]
+                
+                complete_story.append(KeepTogether([data_header, data_intro] + data_bullets))
+                
+                # Overall Branch Trends Section
+                complete_story.append(PageBreak())
+                self.page_breaks_count += 1
+                if county == 'combined':
+                    area_name = ' and '.join(self.counties)
+                    complete_story.append(Paragraph(f'<a name="branch_trends_combined"></a>Overall Branch Trends', self.section_style))
+                else:
+                    # Reuse the safe_county already created above
+                    trends_header = Paragraph(f'<a name="branch_trends_{safe_county}"></a>Overall Branch Trends', self.section_style)
+                
+                if ai_analysis['overall_trends']:
+                    trends_content = self.format_ai_content(ai_analysis['overall_trends'])
+                    complete_story.append(KeepTogether([trends_header] + trends_content + [Spacer(1, 20)]))
+                else:
+                    complete_story.append(trends_header)
+                    complete_story.append(Spacer(1, 20))
+                if not county_trends.empty:
+                    if county == 'combined':
+                        complete_story.append(Paragraph(f'<a name="trends_table_combined"></a>Detailed Branch Trends Data:', self.subsection_style))
+                    else:
+                        # Reuse the safe_county already created above
+                        complete_story.append(Paragraph(f'<a name="trends_table_{safe_county}"></a>Detailed Branch Trends Data:', self.subsection_style))
+                    trend_data = []
+                    trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
+                    for _, row in county_trends.iterrows():
+                        trend_data.append([
+                            self.format_year(row['year']),
+                            self.format_number(row['total_branches']),
                         f"{'+' if row['total_yoy_change_abs'] > 0 else ''}{self.format_number(row['total_yoy_change_abs'])}" if not pd.isna(row['total_yoy_change_abs']) else "N/A",
                         f"{'+' if row['total_yoy_change'] > 0 else ''}{self.format_percentage_table(row['total_yoy_change'])}" if not pd.isna(row['total_yoy_change']) else "N/A",
                         f"{'+' if row['total_cumulative_change'] > 0 else ''}{self.format_percentage_table(row['total_cumulative_change'])}" if not pd.isna(row['total_cumulative_change']) else "N/A",
@@ -1073,10 +925,8 @@ class EnhancedPDFReportGenerator:
             self.page_breaks_count += 1
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
-                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {area_name}", 1, f"market_concentration_combined")
                 complete_story.append(Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style))
             else:
-                self.add_toc_entry(f"Market Concentration: Largest Banks Analysis - {county}", 1, f"market_concentration_{safe_county}")
                 market_header = Paragraph(f'<a name="market_concentration_{safe_county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
                 complete_story.append(market_header)
             
@@ -1093,11 +943,9 @@ class EnhancedPDFReportGenerator:
                         # Create a more professional summary section
                         complete_story.append(Spacer(1, 10))
                         if county == 'combined':
-                            self.add_toc_entry(f"Market Concentration Summary - {area_name}", 2, f"market_summary_combined")
                             complete_story.append(Paragraph(f'<a name="market_summary_combined"></a>Market Concentration Summary', self.subsection_style))
                         else:
                             # Reuse the safe_county already created above
-                            self.add_toc_entry(f"Market Concentration Summary - {county}", 2, f"market_summary_{safe_county}")
                             complete_story.append(Paragraph(f'<a name="market_summary_{safe_county}"></a>Market Concentration Summary', self.subsection_style))
                         complete_story.append(Spacer(1, 5))
                         if county == 'combined':
@@ -1119,11 +967,9 @@ class EnhancedPDFReportGenerator:
                             ))
                         complete_story.append(Spacer(1, 15))
                         if county == 'combined':
-                            self.add_toc_entry(f"Top Banks Market Share Data - {area_name}", 2, f"market_share_table_combined")
                             market_share_header = Paragraph(f'<a name="market_share_table_combined"></a>Top Banks Market Share Data:', self.subsection_style)
                         else:
                             # Reuse the safe_county already created above
-                            self.add_toc_entry(f"Top Banks Market Share Data - {county}", 2, f"market_share_table_{safe_county}")
                             market_share_header = Paragraph(f'<a name="market_share_table_{safe_county}"></a>Top Banks Market Share Data:', self.subsection_style)
                         bank_table_data = []
                         bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
@@ -1163,12 +1009,10 @@ class EnhancedPDFReportGenerator:
                         complete_story.append(KeepTogether([market_share_header, bank_table, Spacer(1, 15)]))
                         if not county_bank_analysis.empty:
                             if county == 'combined':
-                                self.add_toc_entry(f"Growth Analysis - {area_name}", 2, f"growth_analysis_combined")
                                 growth_header = Paragraph(f'<a name="growth_analysis_combined"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
                                     f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
                             else:
                                 # Reuse the safe_county already created above
-                                self.add_toc_entry(f"Growth Analysis - {county}", 2, f"growth_analysis_{safe_county}")
                                 growth_header = Paragraph(f'<a name="growth_analysis_{safe_county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
                                     f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
                             growth_data = []
@@ -1211,11 +1055,9 @@ class EnhancedPDFReportGenerator:
                                 complete_story.extend(self.format_ai_content(ai_analysis['community_impact']))
                                 complete_story.append(Spacer(1, 15))
                             if county == 'combined':
-                                self.add_toc_entry(f"Community Impact Comparison Data - {area_name}", 2, f"community_impact_table_combined")
                                 community_impact_header = Paragraph(f'<a name="community_impact_table_combined"></a>Community Impact Comparison Data:', self.subsection_style)
                             else:
                                 # Reuse the safe_county already created above
-                                self.add_toc_entry(f"Community Impact Comparison Data - {county}", 2, f"community_impact_table_{safe_county}")
                                 community_impact_header = Paragraph(f'<a name="community_impact_table_{safe_county}"></a>Community Impact Comparison Data:', self.subsection_style)
                             comparison_data = []
                             comparison_data.append(['Bank', 'LMI %', 'MMCT %', 'Both %', 'LMI vs\nAvg', 'MMCT vs\nAvg'])
@@ -1266,7 +1108,6 @@ class EnhancedPDFReportGenerator:
         # Methodology and Technical Notes Section
         complete_story.append(PageBreak())
         self.page_breaks_count += 1
-        self.add_toc_entry("Methodology and Technical Notes", 1, "methodology")
         methodology_header = Paragraph('<a name="methodology"></a>Methodology and Technical Notes', self.section_style)
         methodology_content = [
             Paragraph(
@@ -1300,33 +1141,11 @@ class EnhancedPDFReportGenerator:
         
         complete_story.append(KeepTogether([methodology_header] + methodology_content))
         
-        # Now insert the TOC page after the cover page
-        toc_story = self.create_toc_page()
-        
-        # Build the final story with TOC inserted at the right place
-        final_story = []
-        
-        # Find the cover page elements (first few items)
-        cover_page_end = 0
-        for i, item in enumerate(complete_story):
-            if isinstance(item, PageBreak):
-                cover_page_end = i + 1
-                break
-        
-        # Add cover page
-        final_story.extend(complete_story[:cover_page_end])
-        
-        # Add TOC page after cover page
-        final_story.extend(toc_story)
-        
-        # Add all remaining content
-        final_story.extend(complete_story[cover_page_end:])
-        
-        doc.build(final_story)
+        # Build the final story
+        doc.build(complete_story)
         print(f"✅ AI-powered PDF report generated successfully: {output_path}")
         print(f"   - AI provided narrative text only")
         print(f"   - Python handled all tables, charts, and formatting")
-        print(f"   - Dynamic table of contents with {len(self.toc_entries)} entries")
 
 
 def generate_pdf_report_from_data(data: pd.DataFrame, counties: List[str], years: List[int], output_path: str, ai_sections: Dict[str, str] = None):
