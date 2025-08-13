@@ -37,7 +37,7 @@ class EnhancedPDFReportGenerator:
         if data.empty:
             raise ValueError("Data DataFrame cannot be empty")
         
-        required_columns = ['bank_name', 'year', 'county_state', 'total_branches', 'lmict', 'mmct']
+        required_columns = ['bank_name', 'year', 'county_state', 'total_branches', 'lmict', 'mmct', 'total_deposits']
         missing_columns = [col for col in required_columns if col not in data.columns]
         if missing_columns:
             raise ValueError(f"Missing required columns: {missing_columns}")
@@ -355,17 +355,18 @@ class EnhancedPDFReportGenerator:
             if county_data.empty:
                 continue
             
-            # Calculate total branches in county
-            total_county_branches = county_data['total_branches'].sum()
+            # Calculate total deposits in county
+            total_county_deposits = county_data['total_deposits'].sum()
             
-            # Calculate market share for each bank
+            # Calculate market share for each bank based on deposits
             bank_stats = county_data.groupby('bank_name').agg({
                 'total_branches': 'sum',
+                'total_deposits': 'sum',
                 'lmict': 'sum',
                 'mmct': 'sum'
             }).reset_index()
             
-            bank_stats['market_share'] = (bank_stats['total_branches'] / total_county_branches * 100).round(2) if total_county_branches > 0 else 0
+            bank_stats['market_share'] = (bank_stats['total_deposits'] / total_county_deposits * 100).round(2) if total_county_deposits > 0 else 0
             bank_stats['lmict_pct'] = np.where(bank_stats['total_branches'] > 0, 
                                               (bank_stats['lmict'] / bank_stats['total_branches'] * 100).round(2), 0)
             bank_stats['mmct_pct'] = np.where(bank_stats['total_branches'] > 0, 
@@ -489,6 +490,36 @@ class EnhancedPDFReportGenerator:
         
         return comparisons
     
+    def calculate_hhi(self, market_shares: pd.DataFrame) -> Tuple[float, str, str]:
+        """
+        Calculate the Herfindahl-Hirschman Index (HHI) for a given market.
+        
+        Args:
+            market_shares: DataFrame containing bank market share data
+            
+        Returns:
+            Tuple of (HHI value, concentration level, interpretation)
+        """
+        if market_shares.empty:
+            return 0.0, "No Data", "No market data available"
+        
+        # Calculate HHI: sum of squared market shares
+        # Note: market_share is already in percentage form (e.g., 25.5 for 25.5%)
+        hhi = (market_shares['market_share'] ** 2).sum()
+        
+        # Determine concentration level based on regulatory guidelines
+        if hhi < 1000:
+            concentration_level = "Unconcentrated"
+            interpretation = "Market shows healthy competition with low concentration"
+        elif hhi < 1800:
+            concentration_level = "Moderately Concentrated"
+            interpretation = "Market shows moderate concentration, some competitive concerns"
+        else:
+            concentration_level = "Highly Concentrated"
+            interpretation = "Market is highly concentrated and may face regulatory restrictions on mergers"
+        
+        return round(hhi, 1), concentration_level, interpretation
+    
     def generate_enhanced_ai_analysis(self, county_data, trends, market_shares, bank_analysis, comparisons):
         """Generate enhanced AI-powered analysis using the configured AI provider for narrative insights only (no tables or formatting)."""
         # Prepare enhanced data for AI analysis
@@ -599,9 +630,11 @@ class EnhancedPDFReportGenerator:
                         formatted_content.append(Paragraph(formatted_line, self.bullet_style))
                 formatted_content.append(Spacer(1, 8))
                 
-            # Check if this is a subsection heading
-            elif re.match(r'^[A-Z][A-Z\s]+:', section) or re.match(r'^[A-Z][a-z\s]+:', section):
-                # Handle subsection headings
+            # Check if this is a subsection heading (very specific pattern)
+            elif (re.match(r'^[A-Z][A-Z\s]{2,10}:$', section) or 
+                  re.match(r'^[A-Z][a-z\s]{2,15}:$', section)):
+                # Handle subsection headings - only short, specific phrases that end with colon
+                # This prevents normal sentences from being treated as headers
                 formatted_content.append(Paragraph(f"<b>{section}</b>", self.subsection_style))
                 formatted_content.append(Spacer(1, 5))
                 
@@ -810,7 +843,19 @@ class EnhancedPDFReportGenerator:
                     exec_header = Paragraph(f'<a name="exec_summary_{safe_county}"></a>Executive Summary', self.section_style)
                 
                 if ai_analysis['executive_summary']:
-                    exec_content = self.format_ai_content(ai_analysis['executive_summary'])
+                    # Process executive summary with consistent body text styling
+                    exec_summary_text = ai_analysis['executive_summary'].strip()
+                    # Split into paragraphs and format each as body text
+                    exec_paragraphs = exec_summary_text.split('\n\n')
+                    exec_content = []
+                    for paragraph in exec_paragraphs:
+                        if paragraph.strip():
+                            # Clean up any markdown formatting and ensure consistent styling
+                            clean_paragraph = paragraph.strip()
+                            # Remove any ** markers that might cause formatting issues
+                            clean_paragraph = clean_paragraph.replace('**', '')
+                            exec_content.append(Paragraph(clean_paragraph, self.body_style))
+                            exec_content.append(Spacer(1, 8))
                     complete_story.append(KeepTogether([exec_header] + exec_content + [Spacer(1, 20)]))
                 else:
                     complete_story.append(exec_header)
@@ -923,12 +968,138 @@ class EnhancedPDFReportGenerator:
             # Market Concentration Section
             complete_story.append(PageBreak())
             self.page_breaks_count += 1
+            
+            # Create market concentration content that will be kept together
+            market_concentration_content = []
+            
             if county == 'combined':
                 area_name = ' and '.join(self.counties)
-                complete_story.append(Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style))
+                market_header = Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style)
             else:
                 market_header = Paragraph(f'<a name="market_concentration_{safe_county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
-                complete_story.append(market_header)
+            
+            market_concentration_content.append(market_header)
+            
+            # HHI Subsection
+            market_concentration_content.append(Spacer(1, 15))
+            if county == 'combined':
+                market_concentration_content.append(Paragraph(f'<a name="hhi_analysis_combined"></a>Herfindahl-Hirschman Index (HHI) Analysis', self.subsection_style))
+            else:
+                market_concentration_content.append(Paragraph(f'<a name="hhi_analysis_{safe_county}"></a>Herfindahl-Hirschman Index (HHI) Analysis', self.subsection_style))
+            market_concentration_content.append(Spacer(1, 5))
+            
+            # HHI explanation paragraph (without formula)
+            hhi_explanation = (
+                "The Herfindahl-Hirschman Index (HHI) is a widely-used measure of market concentration that regulators employ to assess competition levels in banking markets. "
+                "The HHI is calculated by summing the squared market shares of all banks in a given geographic area, based on deposit market shares. "
+                "Regulatory guidelines classify markets as: <b>unconcentrated</b> (HHI < 1,000), <b>moderately concentrated</b> (HHI 1,000-1,800), or <b>highly concentrated</b> (HHI > 1,800). "
+                "Markets with HHI above 1,800 are considered 'stuck' and face significant restrictions on merger activity, as they require additional regulatory scrutiny for any proposed consolidation."
+            )
+            
+            if county == 'combined':
+                market_concentration_content.append(Paragraph(hhi_explanation, self.body_style))
+            else:
+                market_concentration_content.append(Paragraph(hhi_explanation, self.body_style))
+            market_concentration_content.append(Spacer(1, 15))
+            
+            # HHI Formula display (simplified)
+            hhi_formula = (
+                "<b>HHI Formula:</b><br/>"
+                "HHI = Σ(Market Share²) = Market Share<sub>1</sub>² + Market Share<sub>2</sub>² + ... + Market Share<sub>n</sub>²"
+            )
+            
+            if county == 'combined':
+                market_concentration_content.append(Paragraph(hhi_formula, self.body_style))
+            else:
+                market_concentration_content.append(Paragraph(hhi_formula, self.body_style))
+            market_concentration_content.append(Spacer(1, 15))
+            
+            # Add St. Louis Fed source
+            hhi_source = (
+                "<i><font size='8'>Source: <a href='https://www.stlouisfed.org/on-the-economy/2018/june/hhi-competition-community-banks'>Federal Reserve Bank of St. Louis (June 2018)</a></font></i>"
+            )
+            
+            if county == 'combined':
+                market_concentration_content.append(Paragraph(hhi_source, self.body_style))
+            else:
+                market_concentration_content.append(Paragraph(hhi_source, self.body_style))
+            market_concentration_content.append(Spacer(1, 15))
+            
+            # Calculate and display actual HHI for this area
+            if not county_market_shares.empty:
+                hhi_value, concentration_level, interpretation = self.calculate_hhi(county_market_shares)
+                
+                # Create HHI results display
+                hhi_results = (
+                    f"<b>Current Market HHI:</b> {hhi_value}<br/>"
+                    f"<b>Concentration Level:</b> {concentration_level}<br/>"
+                    f"<b>Regulatory Status:</b> {interpretation}"
+                )
+                
+                if county == 'combined':
+                    market_concentration_content.append(Paragraph(hhi_results, self.summary_box_style))
+                else:
+                    market_concentration_content.append(Paragraph(hhi_results, self.summary_box_style))
+                market_concentration_content.append(Spacer(1, 15))
+                
+                # Add HHI calculation breakdown table
+                if county == 'combined':
+                    hhi_breakdown_header = Paragraph(f'<a name="hhi_breakdown_combined"></a>HHI Calculation Breakdown:', self.subsection_style)
+                else:
+                    hhi_breakdown_header = Paragraph(f'<a name="hhi_breakdown_{safe_county}"></a>HHI Calculation Breakdown:', self.subsection_style)
+                
+                # Create breakdown table showing each bank's contribution to HHI
+                breakdown_data = []
+                breakdown_data.append(['Bank', 'Deposits', 'Market Share %', 'HHI Contribution'])
+                
+                # Sort by market share descending for better readability
+                sorted_banks = county_market_shares.sort_values('market_share', ascending=False)
+                
+                for _, row in sorted_banks.iterrows():
+                    market_share = row['market_share']
+                    squared_value = market_share ** 2
+                    total_deposits = row['total_deposits']
+                    breakdown_data.append([
+                        Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
+                            'BankName',
+                            parent=self.body_style,
+                            alignment=TA_LEFT,
+                            fontSize=9,
+                            leading=11,
+                            wordWrap='LTR'
+                        )),
+                        f"${self.format_number(total_deposits)}",
+                        f"{market_share:.1f}%",
+                        f"{squared_value:.1f}"
+                    ])
+                
+                # Add total row
+                breakdown_data.append(['TOTAL HHI', '', '', f'{hhi_value}'])
+                
+                breakdown_table = Table(breakdown_data, colWidths=[2.5*inch, 1.5*inch, 1.2*inch, 1.2*inch])
+                breakdown_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('ALIGN', (0, 1), (0, -1), 'LEFT'),  # Bank names left-aligned
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                    ('TOPPADDING', (0, 0), (-1, 0), 12),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
+                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                    ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                    ('TOPPADDING', (0, 1), (-1, -1), 8),
+                    ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
+                    ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#e2e8f0')),  # Total row background
+                    ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),  # Total row bold font
+                    ('FONTSIZE', (0, -1), (-1, -1), 10),  # Total row larger font
+                    ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#1a202c')),  # Total row darker text
+                ]))
+                
+                market_concentration_content.append(KeepTogether([hhi_breakdown_header, breakdown_table, Spacer(1, 15)]))
             
             if county in top_banks and not county_market_shares.empty:
                     top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
@@ -941,16 +1112,16 @@ class EnhancedPDFReportGenerator:
                         top_percentage = (total_top_branches / total_county_branches * 100) if total_county_branches > 0 else 0
                         
                         # Create a more professional summary section
-                        complete_story.append(Spacer(1, 10))
+                        market_concentration_content.append(Spacer(1, 10))
                         if county == 'combined':
-                            complete_story.append(Paragraph(f'<a name="market_summary_combined"></a>Market Concentration Summary', self.subsection_style))
+                            market_concentration_content.append(Paragraph(f'<a name="market_summary_combined"></a>Market Concentration Summary', self.subsection_style))
                         else:
                             # Reuse the safe_county already created above
-                            complete_story.append(Paragraph(f'<a name="market_summary_{safe_county}"></a>Market Concentration Summary', self.subsection_style))
-                        complete_story.append(Spacer(1, 5))
+                            market_concentration_content.append(Paragraph(f'<a name="market_summary_{safe_county}"></a>Market Concentration Summary', self.subsection_style))
+                        market_concentration_content.append(Spacer(1, 5))
                         if county == 'combined':
                             area_name = ' and '.join(self.counties)
-                            complete_story.append(Paragraph(
+                            market_concentration_content.append(Paragraph(
                                 f"As of {max(self.years)}, {len(top_bank_data)} banks control "
                                 f"{self.format_percentage(top_percentage)} of all branches in {area_name}, operating "
                                 f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
@@ -958,14 +1129,14 @@ class EnhancedPDFReportGenerator:
                                 self.summary_box_style
                             ))
                         else:
-                            complete_story.append(Paragraph(
+                            market_concentration_content.append(Paragraph(
                                 f"As of {max(self.years)}, {len(top_bank_data)} banks control "
                                 f"{self.format_percentage(top_percentage)} of all branches in {county}, operating "
                                 f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
                                 f"This represents a {len(top_bank_data)}-bank oligopoly in the county's banking sector.",
                                 self.summary_box_style
                             ))
-                        complete_story.append(Spacer(1, 15))
+                        market_concentration_content.append(Spacer(1, 15))
                         if county == 'combined':
                             market_share_header = Paragraph(f'<a name="market_share_table_combined"></a>Top Banks Market Share Data:', self.subsection_style)
                         else:
@@ -1006,7 +1177,7 @@ class EnhancedPDFReportGenerator:
                             ('TOPPADDING', (0, 1), (-1, -1), 8),
                             ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                         ]))
-                        complete_story.append(KeepTogether([market_share_header, bank_table, Spacer(1, 15)]))
+                        market_concentration_content.append(KeepTogether([market_share_header, bank_table, Spacer(1, 15)]))
                         if not county_bank_analysis.empty:
                             if county == 'combined':
                                 growth_header = Paragraph(f'<a name="growth_analysis_combined"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
@@ -1022,7 +1193,7 @@ class EnhancedPDFReportGenerator:
                                     Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
                                         'BankName',
                                         parent=self.body_style,
-                                        alignment=TA_CENTER,
+                                        alignment=TA_LEFT,
                                         fontSize=9,
                                         leading=11,
                                         wordWrap='LTR'
@@ -1049,11 +1220,11 @@ class EnhancedPDFReportGenerator:
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
                                 ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            complete_story.append(KeepTogether([growth_header, growth_table, Spacer(1, 15)]))
+                            market_concentration_content.append(KeepTogether([growth_header, growth_table, Spacer(1, 15)]))
                         if county in bank_analysis and not bank_analysis[county].empty:
                             if ai_analysis['community_impact']:
-                                complete_story.extend(self.format_ai_content(ai_analysis['community_impact']))
-                                complete_story.append(Spacer(1, 15))
+                                market_concentration_content.extend(self.format_ai_content(ai_analysis['community_impact']))
+                                market_concentration_content.append(Spacer(1, 15))
                             if county == 'combined':
                                 community_impact_header = Paragraph(f'<a name="community_impact_table_combined"></a>Community Impact Comparison Data:', self.subsection_style)
                             else:
@@ -1073,7 +1244,7 @@ class EnhancedPDFReportGenerator:
                                         Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
                                             'BankName',
                                             parent=self.body_style,
-                                            alignment=TA_CENTER,
+                                            alignment=TA_LEFT,
                                             fontSize=9,
                                             leading=11,
                                             wordWrap='LTR'
@@ -1101,8 +1272,11 @@ class EnhancedPDFReportGenerator:
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
                                 ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            complete_story.append(KeepTogether([community_impact_header, comparison_table, Spacer(1, 15)]))
+                            market_concentration_content.append(KeepTogether([community_impact_header, comparison_table, Spacer(1, 15)]))
             
+            # Add all market concentration content to the story at once to prevent page breaks
+            complete_story.append(KeepTogether(market_concentration_content))
+        
 
         
         # Methodology and Technical Notes Section
@@ -1121,10 +1295,10 @@ class EnhancedPDFReportGenerator:
             ),
             Spacer(1, 15),
             Paragraph(
-                f"This analysis examines bank branch trends using FDIC Summary of Deposits data. "
-                f"The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, "
-                f"and the percentage of branches in Majority-Minority Census Tracts (MMCT). We identify the largest banks by market share "
-                f"and analyze their growth patterns and community impact compared to county averages. All analysis is enhanced with "
+                f"This analysis examines bank branch trends and market concentration using FDIC Summary of Deposits data. "
+                f"The analysis focuses on four key metrics: total branch counts, total deposits, the percentage of branches in Low-to-Moderate Income (LMI) tracts, "
+                f"and the percentage of branches in Majority-Minority Census Tracts (MMCT). We identify the largest banks by deposit market share "
+                f"and analyze their growth patterns and community impact compared to county averages. Market concentration is measured using the Herfindahl-Hirschman Index (HHI) based on deposit market shares. All analysis is enhanced with "
                 f"AI-powered insights using {self.ai_analyzer.provider.upper()} for deeper interpretation of trends and strategic implications.",
                 self.body_style
             ),
@@ -1134,7 +1308,7 @@ class EnhancedPDFReportGenerator:
                 "• <b>LMICT:</b> Low-to-Moderate Income Census Tracts - areas with median family income below 80% of the area median income<br/>"
                 "• <b>MMCT:</b> Majority-Minority Census Tracts - areas where minority populations represent more than 50% of the total population<br/>"
                 "• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities<br/>"
-                "• <b>Market Share:</b> Percentage of total branches in the county controlled by each bank",
+                "• <b>Market Share:</b> Percentage of total deposits in the county controlled by each bank (regulatory standard for HHI calculation)",
                 self.body_style
             )
         ]

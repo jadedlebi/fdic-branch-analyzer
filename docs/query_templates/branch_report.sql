@@ -5,7 +5,8 @@ SELECT DISTINCT
     c.county_state,
     SUM(1) as total_branches,
     SUM(s.br_lmi) as lmict,
-    SUM(s.br_minority) as mmct
+    SUM(s.br_minority) as mmct,
+    SUM(s.deposits_000s * 1000) as total_deposits
 FROM branches.sod s
 LEFT JOIN geo.cbsa_to_county c
     USING(geoid5)
@@ -20,7 +21,8 @@ SELECT DISTINCT
     c.county_state,
     SUM(1) as total_branches,
     SUM(s.br_lmi) as lmict,
-    SUM(s.br_minority) as mmct
+    SUM(s.br_minority) as mmct,
+    SUM(s.deposits_000s * 1000) as total_deposits
 FROM branches.sod_legacy s
 LEFT JOIN geo.cbsa_to_county c
     USING(geoid5)
