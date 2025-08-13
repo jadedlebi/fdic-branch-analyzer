@@ -320,9 +320,7 @@ class EnhancedPDFReportGenerator:
                                                 (yearly_stats['lmict'] / yearly_stats['total_branches'] * 100).round(2), 0)
             yearly_stats['mmct_pct'] = np.where(yearly_stats['total_branches'] > 0, 
                                                (yearly_stats['mmct'] / yearly_stats['total_branches'] * 100).round(2), 0)
-            # Calculate "Both %" as the minimum of LMI % and MMCT % (theoretical maximum overlap)
-            # Since we don't have actual intersection data, this represents the maximum possible overlap
-            yearly_stats['both_pct'] = np.minimum(yearly_stats['lmict_pct'], yearly_stats['mmct_pct']).round(2)
+            # Note: Both % calculation removed as it's not needed for this analysis
             
             # Calculate year-over-year changes
             yearly_stats['total_yoy_change'] = yearly_stats['total_branches'].pct_change() * 100
@@ -371,9 +369,7 @@ class EnhancedPDFReportGenerator:
                                               (bank_stats['lmict'] / bank_stats['total_branches'] * 100).round(2), 0)
             bank_stats['mmct_pct'] = np.where(bank_stats['total_branches'] > 0, 
                                              (bank_stats['mmct'] / bank_stats['total_branches'] * 100).round(2), 0)
-            # Calculate "Both %" as the minimum of LMI % and MMCT % (theoretical maximum overlap)
-            # Since we don't have actual intersection data, this represents the maximum possible overlap
-            bank_stats['both_pct'] = np.minimum(bank_stats['lmict_pct'], bank_stats['mmct_pct']).round(2)
+            # Note: Both % calculation removed as it's not needed for this analysis
             
             # Sort by market share descending
             bank_stats = bank_stats.sort_values('market_share', ascending=False)
@@ -537,17 +533,17 @@ class EnhancedPDFReportGenerator:
             county_name = analysis_data.get('county', 'the analyzed area')
             years_str = f"{analysis_data.get('years', [2022, 2023, 2024])[0]}-{analysis_data.get('years', [2022, 2023, 2024])[-1]}"
             
-            executive_summary = f"This analysis examines bank branch trends in {county_name} from {years_str} using FDIC Summary of Deposits data. The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, and the percentage of branches in Majority-Minority Census Tracts (MMCT). This comprehensive report provides insights into market concentration, bank strategies, and community impact."
+            executive_summary = f"This comprehensive analysis examines bank branch trends in {county_name} from {years_str} using FDIC Summary of Deposits data. The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, and the percentage of branches in Majority-Minority Census Tracts (MMCT). This report provides detailed insights into market concentration, bank strategies, community impact, and regulatory implications for banking infrastructure development."
             
-            overall_trends_analysis = f"Branch trends in {county_name} show the evolution of banking infrastructure over the {years_str} period. The analysis reveals patterns in branch distribution, market concentration, and demographic service areas."
+            overall_trends_analysis = f"Branch trends in {county_name} demonstrate significant evolution of banking infrastructure over the {years_str} period. The analysis reveals comprehensive patterns in branch distribution, market concentration dynamics, demographic service areas, and strategic positioning of financial institutions. Key observations include year-over-year growth patterns, cumulative expansion trends, and the strategic allocation of branches across different community types."
             
-            bank_strategy_analysis = f"Major banks in {county_name} demonstrate varying strategies in branch placement and market positioning. The analysis examines how different institutions serve diverse communities and compete for market share."
+            bank_strategy_analysis = f"Major banks in {county_name} exhibit diverse and sophisticated strategies in branch placement, market positioning, and community service. The analysis examines how different institutions serve diverse communities, compete for market share, and adapt their strategies based on demographic changes and regulatory requirements. Strategic patterns include geographic expansion, community-focused initiatives, and competitive positioning strategies."
             
-            community_impact_analysis = f"The community impact analysis evaluates how well banks serve low-to-moderate income and majority-minority communities in {county_name}. This includes examining branch accessibility and service quality in underserved areas."
+            community_impact_analysis = f"The community impact analysis provides a comprehensive evaluation of how effectively banks serve low-to-moderate income and majority-minority communities in {county_name}. This includes detailed examination of branch accessibility, service quality in underserved areas, demographic alignment, and the effectiveness of community banking initiatives. The analysis reveals important insights into financial inclusion outcomes and community development impacts."
             
-            key_findings = "1. Branch distribution patterns reveal market concentration trends.\n2. LMI and MMCT service levels vary significantly between institutions.\n3. Market leaders show distinct strategies in community service.\n4. Branch accessibility impacts financial inclusion outcomes.\n5. Regulatory compliance varies across different bank categories."
+            key_findings = "1. Branch distribution patterns reveal significant market concentration trends and competitive dynamics.\n2. LMI and MMCT service levels demonstrate substantial variation between institutions, indicating different strategic priorities.\n3. Market leaders exhibit distinct and sophisticated strategies in community service and market positioning.\n4. Branch accessibility directly impacts financial inclusion outcomes and community development success.\n5. Regulatory compliance and community service standards vary significantly across different bank categories and market segments.\n6. Strategic branch placement decisions reflect both competitive positioning and community service objectives.\n7. Market concentration trends have important implications for regulatory oversight and competitive dynamics."
             
-            conclusion_analysis = f"This analysis provides a comprehensive view of banking infrastructure in {county_name} from {years_str}. The findings support informed decision-making for community development, regulatory oversight, and market analysis."
+            conclusion_analysis = f"This comprehensive analysis provides an in-depth view of banking infrastructure in {county_name} from {years_str}, revealing critical insights into market dynamics, competitive strategies, and community service effectiveness. The findings support informed decision-making for community development initiatives, regulatory oversight processes, market analysis frameworks, and strategic planning for financial institutions. The analysis demonstrates the complex interplay between market competition, community service, and regulatory compliance in shaping banking infrastructure development."
         else:
             try:
                 executive_summary = self.ai_analyzer.generate_executive_summary(analysis_data)
@@ -562,17 +558,17 @@ class EnhancedPDFReportGenerator:
                 county_name = analysis_data.get('county', 'the analyzed area')
                 years_str = f"{analysis_data.get('years', [2022, 2023, 2024])[0]}-{analysis_data.get('years', [2022, 2023, 2024])[-1]}"
                 
-                executive_summary = f"This analysis examines bank branch trends in {county_name} from {years_str} using FDIC Summary of Deposits data. The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, and the percentage of branches in Majority-Minority Census Tracts (MMCT). This comprehensive report provides insights into market concentration, bank strategies, and community impact."
+                executive_summary = f"This comprehensive analysis examines bank branch trends in {county_name} from {years_str} using FDIC Summary of Deposits data. The analysis focuses on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, and the percentage of branches in Majority-Minority Census Tracts (MMCT). This report provides detailed insights into market concentration, bank strategies, community impact, and regulatory implications for banking infrastructure development."
                 
-                overall_trends_analysis = f"Branch trends in {county_name} show the evolution of banking infrastructure over the {years_str} period. The analysis reveals patterns in branch distribution, market concentration, and demographic service areas."
+                overall_trends_analysis = f"Branch trends in {county_name} demonstrate significant evolution of banking infrastructure over the {years_str} period. The analysis reveals comprehensive patterns in branch distribution, market concentration dynamics, demographic service areas, and strategic positioning of financial institutions. Key observations include year-over-year growth patterns, cumulative expansion trends, and the strategic allocation of branches across different community types."
                 
-                bank_strategy_analysis = f"Major banks in {county_name} demonstrate varying strategies in branch placement and market positioning. The analysis examines how different institutions serve diverse communities and compete for market share."
+                bank_strategy_analysis = f"Major banks in {county_name} exhibit diverse and sophisticated strategies in branch placement, market positioning, and community service. The analysis examines how different institutions serve diverse communities, compete for market share, and adapt their strategies based on demographic changes and regulatory requirements. Strategic patterns include geographic expansion, community-focused initiatives, and competitive positioning strategies."
                 
-                community_impact_analysis = f"The community impact analysis evaluates how well banks serve low-to-moderate income and majority-minority communities in {county_name}. This includes examining branch accessibility and service quality in underserved areas."
+                community_impact_analysis = f"The community impact analysis provides a comprehensive evaluation of how effectively banks serve low-to-moderate income and majority-minority communities in {county_name}. This includes detailed examination of branch accessibility, service quality in underserved areas, demographic alignment, and the effectiveness of community banking initiatives. The analysis reveals important insights into financial inclusion outcomes and community development impacts."
                 
-                key_findings = "1. Branch distribution patterns reveal market concentration trends.\n2. LMI and MMCT service levels vary significantly between institutions.\n3. Market leaders show distinct strategies in community service.\n4. Branch accessibility impacts financial inclusion outcomes.\n5. Regulatory compliance varies across different bank categories."
+                key_findings = "1. Branch distribution patterns reveal significant market concentration trends and competitive dynamics.\n2. LMI and MMCT service levels demonstrate substantial variation between institutions, indicating different strategic priorities.\n3. Market leaders exhibit distinct and sophisticated strategies in community service and market positioning.\n4. Branch accessibility directly impacts financial inclusion outcomes and community development success.\n5. Regulatory compliance and community service standards vary significantly across different bank categories and market segments.\n6. Strategic branch placement decisions reflect both competitive positioning and community service objectives.\n7. Market concentration trends have important implications for regulatory oversight and competitive dynamics."
                 
-                conclusion_analysis = f"This analysis provides a comprehensive view of banking infrastructure in {county_name} from {years_str}. The findings support informed decision-making for community development, regulatory oversight, and market analysis."
+                conclusion_analysis = f"This comprehensive analysis provides an in-depth view of banking infrastructure in {county_name} from {years_str}, revealing critical insights into market dynamics, competitive strategies, and community service effectiveness. The findings support informed decision-making for community development initiatives, regulatory oversight processes, market analysis frameworks, and strategic planning for financial institutions. The analysis demonstrates the complex interplay between market competition, community service, and regulatory compliance in shaping banking infrastructure development."
         return {
             'executive_summary': executive_summary,
             'overall_trends': overall_trends_analysis,
@@ -760,29 +756,122 @@ class EnhancedPDFReportGenerator:
         
         # Combine data for all counties if multiple counties
         if len(self.counties) > 1:
-            # Combine trends data
+            # Aggregate trends data by year (sum the numbers)
             combined_trends = pd.DataFrame()
-            for county in self.counties:
-                if county in trends:
-                    county_trends = trends[county].copy()
-                    county_trends['county'] = county
-                    combined_trends = pd.concat([combined_trends, county_trends], ignore_index=True)
+            for year in self.years:
+                year_data = []
+                for county in self.counties:
+                    if county in trends and year in trends[county]['year'].values:
+                        year_row = trends[county][trends[county]['year'] == year].iloc[0]
+                        year_data.append(year_row)
+                
+                if year_data:
+                    # Sum all the numeric columns across counties for this year
+                    aggregated_row = year_data[0].copy()
+                    aggregated_row['total_branches'] = sum(row['total_branches'] for row in year_data)
+                    aggregated_row['lmict'] = sum(row['lmict'] for row in year_data)
+                    aggregated_row['mmct'] = sum(row['mmct'] for row in year_data)
+                    
+                    # Recalculate percentages based on aggregated totals
+                    if aggregated_row['total_branches'] > 0:
+                        aggregated_row['lmict_pct'] = (aggregated_row['lmict'] / aggregated_row['total_branches'] * 100).round(2)
+                        aggregated_row['mmct_pct'] = (aggregated_row['mmct'] / aggregated_row['total_branches'] * 100).round(2)
+                    
+                    # Recalculate year-over-year changes
+                    if year > min(self.years):
+                        prev_year = year - 1
+                        prev_year_data = []
+                        for county in self.counties:
+                            if county in trends and prev_year in trends[county]['year'].values:
+                                prev_row = trends[county][trends[county]['year'] == prev_year].iloc[0]
+                                prev_year_data.append(prev_row)
+                        
+                        if prev_year_data:
+                            prev_total = sum(row['total_branches'] for row in prev_year_data)
+                            aggregated_row['total_yoy_change'] = ((aggregated_row['total_branches'] - prev_total) / prev_total * 100).round(2) if prev_total > 0 else 0
+                            aggregated_row['total_yoy_change_abs'] = aggregated_row['total_branches'] - prev_total
+                    
+                    # Recalculate cumulative changes from first year
+                    first_year = min(self.years)
+                    if year > first_year:
+                        first_year_data = []
+                        for county in self.counties:
+                            if county in trends and first_year in trends[county]['year'].values:
+                                first_row = trends[county][trends[county]['year'] == first_year].iloc[0]
+                                first_year_data.append(first_row)
+                        
+                        if first_year_data:
+                            first_total = sum(row['total_branches'] for row in first_year_data)
+                            aggregated_row['total_cumulative_change'] = ((aggregated_row['total_branches'] - first_total) / first_total * 100).round(2) if first_total > 0 else 0
+                    
+                    combined_trends = pd.concat([combined_trends, pd.DataFrame([aggregated_row])], ignore_index=True)
             
-            # Combine market shares data
+            # Aggregate market shares data by bank (sum the numbers)
             combined_market_shares = pd.DataFrame()
+            all_banks = set()
             for county in self.counties:
                 if county in market_shares:
-                    county_market_shares = market_shares[county].copy()
-                    county_market_shares['county'] = county
-                    combined_market_shares = pd.concat([combined_market_shares, county_market_shares], ignore_index=True)
+                    all_banks.update(market_shares[county]['bank_name'].unique())
             
-            # Combine bank analysis data
+            for bank in all_banks:
+                bank_data = []
+                for county in self.counties:
+                    if county in market_shares:
+                        bank_rows = market_shares[county][market_shares[county]['bank_name'] == bank]
+                        if not bank_rows.empty:
+                            bank_data.append(bank_rows.iloc[0])
+                
+                if bank_data:
+                    # Sum all the numeric columns across counties for this bank
+                    aggregated_row = bank_data[0].copy()
+                    aggregated_row['total_branches'] = sum(row['total_branches'] for row in bank_data)
+                    aggregated_row['total_deposits'] = sum(row['total_deposits'] for row in bank_data)
+                    aggregated_row['lmict'] = sum(row['lmict'] for row in bank_data)
+                    aggregated_row['mmct'] = sum(row['mmct'] for row in bank_data)
+                    
+                    # Recalculate percentages based on aggregated totals
+                    if aggregated_row['total_branches'] > 0:
+                        aggregated_row['lmict_pct'] = (aggregated_row['lmict'] / aggregated_row['total_branches'] * 100).round(2)
+                        aggregated_row['mmct_pct'] = (aggregated_row['mmct'] / aggregated_row['total_branches'] * 100).round(2)
+                    
+                    # Recalculate market share based on total deposits across all counties
+                    total_all_deposits = sum(market_shares[county]['total_deposits'].sum() for county in self.counties if county in market_shares)
+                    aggregated_row['market_share'] = (aggregated_row['total_deposits'] / total_all_deposits * 100).round(2) if total_all_deposits > 0 else 0
+                    
+                    combined_market_shares = pd.concat([combined_market_shares, pd.DataFrame([aggregated_row])], ignore_index=True)
+            
+            # Sort by market share descending
+            combined_market_shares = combined_market_shares.sort_values('market_share', ascending=False)
+            
+            # Aggregate bank analysis data by bank (sum the numbers)
             combined_bank_analysis = pd.DataFrame()
+            all_banks = set()
             for county in self.counties:
                 if county in bank_analysis:
-                    county_bank_analysis = bank_analysis[county].copy()
-                    county_bank_analysis['county'] = county
-                    combined_bank_analysis = pd.concat([combined_bank_analysis, county_bank_analysis], ignore_index=True)
+                    all_banks.update(bank_analysis[county]['bank_name'].unique())
+            
+            for bank in all_banks:
+                bank_data = []
+                for county in self.counties:
+                    if county in bank_analysis:
+                        bank_rows = bank_analysis[county][bank_analysis[county]['bank_name'] == bank]
+                        if not bank_rows.empty:
+                            bank_data.append(bank_rows.iloc[0])
+                
+                if bank_data:
+                    # Sum all the numeric columns across counties for this bank
+                    aggregated_row = bank_data[0].copy()
+                    aggregated_row['first_year_branches'] = sum(row['first_year_branches'] for row in bank_data)
+                    aggregated_row['last_year_branches'] = sum(row['last_year_branches'] for row in bank_data)
+                    aggregated_row['absolute_change'] = aggregated_row['last_year_branches'] - aggregated_row['first_year_branches']
+                    
+                    # Recalculate percentage change based on aggregated totals
+                    if aggregated_row['first_year_branches'] > 0:
+                        aggregated_row['percentage_change'] = (aggregated_row['absolute_change'] / aggregated_row['first_year_branches'] * 100).round(2)
+                    else:
+                        aggregated_row['percentage_change'] = 0
+                    
+                    combined_bank_analysis = pd.concat([combined_bank_analysis, pd.DataFrame([aggregated_row])], ignore_index=True)
             
             # Generate AI analysis for combined data
             combined_comparisons = {}
@@ -808,8 +897,8 @@ class EnhancedPDFReportGenerator:
             # Single county - use original data
             counties_to_process = self.counties
         
-                    # Generate enhanced AI analysis for each county/combined area (narrative only)
-            for county in counties_to_process:
+        # Generate enhanced AI analysis for each county/combined area (narrative only)
+        for county in counties_to_process:
                 # Skip counties that don't have data
                 if county not in trends or county not in market_shares:
                     print(f"Warning: No data available for county: {county}")
@@ -821,7 +910,13 @@ class EnhancedPDFReportGenerator:
                 county_comparisons = comparisons.get(county, {})
                 if county == 'combined':
                     # Use the already generated AI analysis for combined data
-                    pass
+                    ai_analysis = self.generate_enhanced_ai_analysis(
+                        {'county': ' and '.join(self.counties)},
+                        county_trends,
+                        county_market_shares,
+                        county_bank_analysis,
+                        county_comparisons
+                    )
                 else:
                     ai_analysis = self.generate_enhanced_ai_analysis(
                         {'county': county},
@@ -832,7 +927,9 @@ class EnhancedPDFReportGenerator:
                     )
                 
                 # Create safe county name once and reuse it throughout this function
-                if county != 'combined':
+                if county == 'combined':
+                    safe_county = 'combined'
+                else:
                     safe_county = self.create_safe_anchor(county)
                 
                 # Executive Summary Section
@@ -878,46 +975,14 @@ class EnhancedPDFReportGenerator:
                     complete_story.append(key_header)
                     complete_story.append(Spacer(1, 20))
                 
-                # Understanding the Data Section
-                complete_story.append(PageBreak())
-                self.page_breaks_count += 1
-                if county == 'combined':
-                    area_name = ' and '.join(self.counties)
-                    complete_story.append(Paragraph(f'<a name="data_understanding_combined"></a>Understanding the Data', self.section_style))
-                    complete_story.append(Paragraph(
-                        f"This analysis examines bank branch trends in {area_name} from {years_str} using FDIC Summary of Deposits data. "
-                        f"We focus on three key metrics:",
-                        self.body_style
-                    ))
-                else:
-                    # Reuse the safe_county already created above
-                    data_header = Paragraph(f'<a name="data_understanding_{safe_county}"></a>Understanding the Data', self.section_style)
-                    data_intro = Paragraph(
-                        f"This analysis examines bank branch trends in {county} from {years_str} using FDIC Summary of Deposits data. "
-                        f"We focus on three key metrics:",
-                        self.body_style
-                    )
-                
-                data_bullets = [
-                    Paragraph("• <b>LMICT (Low-to-Moderate Income Census Tracts):</b> Branches located in areas with median family income below 80% of the area median income", self.bullet_style),
-                    Paragraph("• <b>MMCT (Majority-Minority Census Tracts):</b> Branches located in areas where minority populations represent more than 50% of the total population", self.bullet_style),
-                    Paragraph("• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities", self.bullet_style),
-                    Paragraph(
-                        f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
-                        f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
-                        self.body_style
-                    ),
-                    Spacer(1, 20)
-                ]
-                
-                complete_story.append(KeepTogether([data_header, data_intro] + data_bullets))
+
                 
                 # Overall Branch Trends Section
                 complete_story.append(PageBreak())
                 self.page_breaks_count += 1
                 if county == 'combined':
                     area_name = ' and '.join(self.counties)
-                    complete_story.append(Paragraph(f'<a name="branch_trends_combined"></a>Overall Branch Trends', self.section_style))
+                    trends_header = Paragraph(f'<a name="branch_trends_combined"></a>Overall Branch Trends', self.section_style)
                 else:
                     # Reuse the safe_county already created above
                     trends_header = Paragraph(f'<a name="branch_trends_{safe_county}"></a>Overall Branch Trends', self.section_style)
@@ -935,7 +1000,7 @@ class EnhancedPDFReportGenerator:
                         # Reuse the safe_county already created above
                         complete_story.append(Paragraph(f'<a name="trends_table_{safe_county}"></a>Detailed Branch Trends Data:', self.subsection_style))
                     trend_data = []
-                    trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %', 'Both %'])
+                    trend_data.append(['Year', 'Total', 'YoY Chg', 'YoY %', 'Cumul %', 'LMI %', 'MMCT %'])
                     for _, row in county_trends.iterrows():
                         trend_data.append([
                             self.format_year(row['year']),
@@ -944,208 +1009,213 @@ class EnhancedPDFReportGenerator:
                         f"{'+' if row['total_yoy_change'] > 0 else ''}{self.format_percentage_table(row['total_yoy_change'])}" if not pd.isna(row['total_yoy_change']) else "N/A",
                         f"{'+' if row['total_cumulative_change'] > 0 else ''}{self.format_percentage_table(row['total_cumulative_change'])}" if not pd.isna(row['total_cumulative_change']) else "N/A",
                         self.format_percentage_table(row['lmict_pct']),
-                        self.format_percentage_table(row['mmct_pct']),
-                        self.format_percentage_table(row['both_pct'])
+                        self.format_percentage_table(row['mmct_pct'])
                     ])
-                trend_table = Table(trend_data, colWidths=[0.8*inch, 1.1*inch, 1*inch, 0.9*inch, 1*inch, 0.9*inch, 0.9*inch, 0.9*inch])
-                trend_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 10),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                    ('TOPPADDING', (0, 0), (-1, 0), 12),
-                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-                    ('FONTSIZE', (0, 1), (-1, -1), 9),
-                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                    ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-                    ('TOPPADDING', (0, 1), (-1, -1), 8),
-                ]))
-                complete_story.append(KeepTogether([trend_table, Spacer(1, 15)]))
-            
-            # Market Concentration Section
-            complete_story.append(PageBreak())
-            self.page_breaks_count += 1
-            
-            # Create market concentration content that will be kept together
-            market_concentration_content = []
-            
-            if county == 'combined':
-                area_name = ' and '.join(self.counties)
-                market_header = Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style)
-            else:
-                market_header = Paragraph(f'<a name="market_concentration_{safe_county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
-            
-            market_concentration_content.append(market_header)
-            
-            # HHI Subsection
-            market_concentration_content.append(Spacer(1, 15))
-            if county == 'combined':
-                market_concentration_content.append(Paragraph(f'<a name="hhi_analysis_combined"></a>Herfindahl-Hirschman Index (HHI) Analysis', self.subsection_style))
-            else:
-                market_concentration_content.append(Paragraph(f'<a name="hhi_analysis_{safe_county}"></a>Herfindahl-Hirschman Index (HHI) Analysis', self.subsection_style))
-            market_concentration_content.append(Spacer(1, 5))
-            
-            # HHI explanation paragraph (without formula)
-            hhi_explanation = (
-                "The Herfindahl-Hirschman Index (HHI) is a widely-used measure of market concentration that regulators employ to assess competition levels in banking markets. "
-                "The HHI is calculated by summing the squared market shares of all banks in a given geographic area, based on deposit market shares. "
-                "Regulatory guidelines classify markets as: <b>unconcentrated</b> (HHI < 1,000), <b>moderately concentrated</b> (HHI 1,000-1,800), or <b>highly concentrated</b> (HHI > 1,800). "
-                "Markets with HHI above 1,800 are considered 'stuck' and face significant restrictions on merger activity, as they require additional regulatory scrutiny for any proposed consolidation."
-            )
-            
-            if county == 'combined':
-                market_concentration_content.append(Paragraph(hhi_explanation, self.body_style))
-            else:
-                market_concentration_content.append(Paragraph(hhi_explanation, self.body_style))
-            market_concentration_content.append(Spacer(1, 15))
-            
-            # HHI Formula display (simplified)
-            hhi_formula = (
-                "<b>HHI Formula:</b><br/>"
-                "HHI = Σ(Market Share²) = Market Share<sub>1</sub>² + Market Share<sub>2</sub>² + ... + Market Share<sub>n</sub>²"
-            )
-            
-            if county == 'combined':
-                market_concentration_content.append(Paragraph(hhi_formula, self.body_style))
-            else:
-                market_concentration_content.append(Paragraph(hhi_formula, self.body_style))
-            market_concentration_content.append(Spacer(1, 15))
-            
-            # Add St. Louis Fed source
-            hhi_source = (
-                "<i><font size='8'>Source: <a href='https://www.stlouisfed.org/on-the-economy/2018/june/hhi-competition-community-banks'>Federal Reserve Bank of St. Louis (June 2018)</a></font></i>"
-            )
-            
-            if county == 'combined':
-                market_concentration_content.append(Paragraph(hhi_source, self.body_style))
-            else:
-                market_concentration_content.append(Paragraph(hhi_source, self.body_style))
-            market_concentration_content.append(Spacer(1, 15))
-            
-            # Calculate and display actual HHI for this area
-            if not county_market_shares.empty:
-                hhi_value, concentration_level, interpretation = self.calculate_hhi(county_market_shares)
+                    trend_table = Table(trend_data, colWidths=[0.8*inch, 1.1*inch, 1*inch, 0.9*inch, 1*inch, 0.9*inch, 0.9*inch])
+                    trend_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('TOPPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+                        ('FONTSIZE', (0, 1), (-1, -1), 9),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                        ('TOPPADDING', (0, 1), (-1, -1), 8),
+                    ]))
+                    complete_story.append(KeepTogether([trend_table, Spacer(1, 15)]))
+                else:
+                    # Add a message if no trends data
+                    complete_story.append(Paragraph("No trends data available for this area.", self.body_style))
+                    complete_story.append(Spacer(1, 15))
                 
-                # Create HHI results display
-                hhi_results = (
-                    f"<b>Current Market HHI:</b> {hhi_value}<br/>"
-                    f"<b>Concentration Level:</b> {concentration_level}<br/>"
-                    f"<b>Regulatory Status:</b> {interpretation}"
+                # Market Concentration Section
+                
+                # Create market concentration content that will be kept together
+                market_concentration_content = []
+                
+                if county == 'combined':
+                    area_name = ' and '.join(self.counties)
+                    market_header = Paragraph(f'<a name="market_concentration_combined"></a>Market Concentration: Largest Banks Analysis', self.section_style)
+                else:
+                    market_header = Paragraph(f'<a name="market_concentration_{safe_county}"></a>Market Concentration: Largest Banks Analysis', self.section_style)
+                
+                market_concentration_content.append(market_header)
+                
+                # HHI Subsection
+                market_concentration_content.append(Spacer(1, 15))
+                if county == 'combined':
+                    market_concentration_content.append(Paragraph(f'<a name="hhi_analysis_combined"></a>Herfindahl-Hirschman Index (HHI) Analysis', self.subsection_style))
+                else:
+                    market_concentration_content.append(Paragraph(f'<a name="hhi_analysis_{safe_county}"></a>Herfindahl-Hirschman Index (HHI) Analysis', self.subsection_style))
+                market_concentration_content.append(Spacer(1, 5))
+                
+                # HHI explanation paragraph
+                hhi_explanation = (
+                    "The Herfindahl-Hirschman Index (HHI) is a widely-used measure of market concentration that regulators employ to assess competition levels in banking markets. "
+                    "The HHI is calculated by summing the squared market shares of all banks in a given geographic area, based on deposit market shares. "
+                    "Regulatory guidelines classify markets as: <b>unconcentrated</b> (HHI < 1,000), <b>moderately concentrated</b> (HHI 1,000-1,800), or <b>highly concentrated</b> (HHI > 1,800). "
+                    "Markets with HHI above 1,800 are considered 'stuck' and face significant restrictions on merger activity, as they require additional regulatory scrutiny for any proposed consolidation."
                 )
                 
-                if county == 'combined':
-                    market_concentration_content.append(Paragraph(hhi_results, self.summary_box_style))
-                else:
-                    market_concentration_content.append(Paragraph(hhi_results, self.summary_box_style))
+                market_concentration_content.append(Paragraph(hhi_explanation, self.body_style))
                 market_concentration_content.append(Spacer(1, 15))
                 
-                # Add HHI calculation breakdown table
-                if county == 'combined':
-                    hhi_breakdown_header = Paragraph(f'<a name="hhi_breakdown_combined"></a>HHI Calculation Breakdown:', self.subsection_style)
-                else:
-                    hhi_breakdown_header = Paragraph(f'<a name="hhi_breakdown_{safe_county}"></a>HHI Calculation Breakdown:', self.subsection_style)
+                # HHI Formula display
+                hhi_formula = (
+                    "<b>HHI Formula:</b><br/>"
+                    "HHI = Σ(Market Share²) = Market Share<sub>1</sub>² + Market Share<sub>2</sub>² + ... + Market Share<sub>n</sub>²"
+                )
                 
-                # Create breakdown table showing each bank's contribution to HHI
-                breakdown_data = []
-                breakdown_data.append(['Bank', 'Deposits', 'Market Share %', 'HHI Contribution'])
+                market_concentration_content.append(Paragraph(hhi_formula, self.body_style))
+                market_concentration_content.append(Spacer(1, 15))
                 
-                # Sort by market share descending for better readability
-                sorted_banks = county_market_shares.sort_values('market_share', ascending=False)
+                # Add St. Louis Fed source
+                hhi_source = (
+                    "<i><font size='8'>Source: <a href='https://www.stlouisfed.org/on-the-economy/2018/june/hhi-competition-community-banks'>Federal Reserve Bank of St. Louis (June 2018)</a></font></i>"
+                )
                 
-                for _, row in sorted_banks.iterrows():
-                    market_share = row['market_share']
-                    squared_value = market_share ** 2
-                    total_deposits = row['total_deposits']
-                    breakdown_data.append([
-                        Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
-                            'BankName',
-                            parent=self.body_style,
-                            alignment=TA_LEFT,
-                            fontSize=9,
-                            leading=11,
-                            wordWrap='LTR'
-                        )),
-                        f"${self.format_number(total_deposits)}",
-                        f"{market_share:.1f}%",
-                        f"{squared_value:.1f}"
-                    ])
+                market_concentration_content.append(Paragraph(hhi_source, self.body_style))
+                market_concentration_content.append(Spacer(1, 15))
                 
-                # Add total row
-                breakdown_data.append(['TOTAL HHI', '', '', f'{hhi_value}'])
+                # Calculate and display actual HHI for this area
+                if not county_market_shares.empty:
+                    hhi_value, concentration_level, interpretation = self.calculate_hhi(county_market_shares)
+                    
+                    # Create HHI results display
+                    hhi_results = (
+                        f"<b>Current Market HHI:</b> {hhi_value}<br/>"
+                        f"<b>Concentration Level:</b> {concentration_level}<br/>"
+                        f"<b>Regulatory Status:</b> {interpretation}"
+                    )
+                    
+                    market_concentration_content.append(Paragraph(hhi_results, self.summary_box_style))
+                    market_concentration_content.append(Spacer(1, 15))
+                    
+                    # Add HHI calculation breakdown table
+                    if county == 'combined':
+                        hhi_breakdown_header = Paragraph(f'<a name="hhi_breakdown_combined"></a>HHI Calculation Breakdown:', self.subsection_style)
+                    else:
+                        hhi_breakdown_header = Paragraph(f'<a name="hhi_breakdown_{safe_county}"></a>HHI Calculation Breakdown:', self.subsection_style)
+                    
+                    # Create breakdown table showing each bank's contribution to HHI
+                    breakdown_data = []
+                    breakdown_data.append(['Bank', 'Deposits', 'Market Share %', 'HHI Contribution'])
+                    
+                    # Sort by market share descending for better readability
+                    sorted_banks = county_market_shares.sort_values('market_share', ascending=False)
+                    
+                    for _, row in sorted_banks.iterrows():
+                        market_share = row['market_share']
+                        squared_value = market_share ** 2
+                        total_deposits = row['total_deposits']
+                        breakdown_data.append([
+                            Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
+                                'BankName',
+                                parent=self.body_style,
+                                alignment=TA_CENTER,
+                                fontSize=9,
+                                leading=11,
+                                wordWrap='LTR'
+                            )),
+                            f"${self.format_number(total_deposits)}",
+                            self.format_percentage_table(market_share),
+                            f"{squared_value:.0f}"
+                        ])
+                    
+                    breakdown_table = Table(breakdown_data, colWidths=[2.5*inch, 1.2*inch, 1.2*inch, 1.2*inch])
+                    breakdown_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('TOPPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+                        ('FONTSIZE', (0, 1), (-1, -1), 9),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                        ('TOPPADDING', (0, 1), (-1, -1), 8),
+                        ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
+                    ]))
+                    
+                    market_concentration_content.append(KeepTogether([hhi_breakdown_header, breakdown_table, Spacer(1, 15)]))
                 
-                breakdown_table = Table(breakdown_data, colWidths=[2.5*inch, 1.5*inch, 1.2*inch, 1.2*inch])
-                breakdown_table.setStyle(TableStyle([
-                    ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
-                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('ALIGN', (0, 1), (0, -1), 'LEFT'),  # Bank names left-aligned
-                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 10),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                    ('TOPPADDING', (0, 0), (-1, 0), 12),
-                    ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
-                    ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-                    ('FONTSIZE', (0, 1), (-1, -1), 9),
-                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                    ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-                    ('TOPPADDING', (0, 1), (-1, -1), 8),
-                    ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
-                    ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#e2e8f0')),  # Total row background
-                    ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),  # Total row bold font
-                    ('FONTSIZE', (0, -1), (-1, -1), 10),  # Total row larger font
-                    ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#1a202c')),  # Total row darker text
-                ]))
-                
-                market_concentration_content.append(KeepTogether([hhi_breakdown_header, breakdown_table, Spacer(1, 15)]))
-            
-            if county in top_banks and not county_market_shares.empty:
-                    top_bank_data = county_market_shares[county_market_shares['bank_name'].isin(top_banks[county])]
-                    if not top_bank_data.empty:
-                        if ai_analysis['bank_strategies']:
-                            complete_story.extend(self.format_ai_content(ai_analysis['bank_strategies']))
-                            complete_story.append(Spacer(1, 15))
-                        total_top_branches = top_bank_data['total_branches'].sum()
-                        total_county_branches = county_market_shares['total_branches'].sum()
-                        top_percentage = (total_top_branches / total_county_branches * 100) if total_county_branches > 0 else 0
+                # Add market share table for top banks
+                if not county_market_shares.empty:
+                    # Get top banks by number of branches (top 10)
+                    top_bank_data = county_market_shares.nlargest(10, 'total_branches')
+                    
+                    if county == 'combined':
+                        market_share_header = Paragraph(f'<a name="market_share_table_combined"></a>Top Banks Market Share Data:', self.subsection_style)
+                    else:
+                        market_share_header = Paragraph(f'<a name="market_share_table_{safe_county}"></a>Top Banks Market Share Data:', self.subsection_style)
+                    
+                    bank_table_data = []
+                    bank_table_data.append(['Bank', 'Branches', 'Branch Mkt\nShare %', 'LMI %', 'MMCT %'])
+                    
+                    # Calculate total branches for branch-based market share (only for this table display)
+                    total_branches = top_bank_data['total_branches'].sum()
+                    
+                    for _, row in top_bank_data.iterrows():
+                        # Calculate branch-based market share for this table only
+                        branch_market_share = (row['total_branches'] / total_branches * 100) if total_branches > 0 else 0
                         
-                        # Create a more professional summary section
-                        market_concentration_content.append(Spacer(1, 10))
+                        bank_table_data.append([
+                            Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
+                                'BankName',
+                                parent=self.body_style,
+                                alignment=TA_CENTER,
+                                fontSize=9,
+                                leading=11,
+                                wordWrap='LTR'
+                            )),
+                            self.format_number(row['total_branches']),
+                            self.format_percentage_table(branch_market_share),
+                            self.format_percentage_table(row['lmict_pct']),
+                            self.format_percentage_table(row['mmct_pct'])
+                        ])
+                    
+                    bank_table = Table(bank_table_data, colWidths=[2.5*inch, 1.1*inch, 1.1*inch, 0.9*inch, 0.9*inch])
+                    bank_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                        ('TOPPADDING', (0, 0), (-1, 0), 12),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
+                        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
+                        ('FONTSIZE', (0, 1), (-1, -1), 9),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+                        ('TOPPADDING', (0, 1), (-1, -1), 8),
+                        ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
+                    ]))
+                    
+                    market_concentration_content.append(KeepTogether([market_share_header, bank_table, Spacer(1, 15)]))
+                    
+                    # Add Growth Analysis section
+                    if not county_bank_analysis.empty:
                         if county == 'combined':
-                            market_concentration_content.append(Paragraph(f'<a name="market_summary_combined"></a>Market Concentration Summary', self.subsection_style))
+                            growth_header = Paragraph(f'<a name="growth_analysis_combined"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
+                                f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
                         else:
-                            # Reuse the safe_county already created above
-                            market_concentration_content.append(Paragraph(f'<a name="market_summary_{safe_county}"></a>Market Concentration Summary', self.subsection_style))
-                        market_concentration_content.append(Spacer(1, 5))
-                        if county == 'combined':
-                            area_name = ' and '.join(self.counties)
-                            market_concentration_content.append(Paragraph(
-                                f"As of {max(self.years)}, {len(top_bank_data)} banks control "
-                                f"{self.format_percentage(top_percentage)} of all branches in {area_name}, operating "
-                                f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
-                                f"This represents a {len(top_bank_data)}-bank oligopoly in the area's banking sector.",
-                                self.summary_box_style
-                            ))
-                        else:
-                            market_concentration_content.append(Paragraph(
-                                f"As of {max(self.years)}, {len(top_bank_data)} banks control "
-                                f"{self.format_percentage(top_percentage)} of all branches in {county}, operating "
-                                f"{self.format_number(total_top_branches)} out of {self.format_number(total_county_branches)} total branches. "
-                                f"This represents a {len(top_bank_data)}-bank oligopoly in the county's banking sector.",
-                                self.summary_box_style
-                            ))
-                        market_concentration_content.append(Spacer(1, 15))
-                        if county == 'combined':
-                            market_share_header = Paragraph(f'<a name="market_share_table_combined"></a>Top Banks Market Share Data:', self.subsection_style)
-                        else:
-                            # Reuse the safe_county already created above
-                            market_share_header = Paragraph(f'<a name="market_share_table_{safe_county}"></a>Top Banks Market Share Data:', self.subsection_style)
-                        bank_table_data = []
-                        bank_table_data.append(['Bank', 'Branches', 'Mkt Share %', 'LMI %', 'MMCT %', 'Both %'])
-                        for _, row in top_bank_data.iterrows():
-                            bank_table_data.append([
+                            growth_header = Paragraph(f'<a name="growth_analysis_{safe_county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
+                                f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
+                        
+                        growth_data = []
+                        growth_data.append(['Bank', f'Branches\n({self.years[0]})', f'Branches\n({self.years[-1]})', f'Absolute\nChange', f'Percentage\nChange %'])
+                        
+                        for _, row in county_bank_analysis.iterrows():
+                            growth_data.append([
                                 Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
                                     'BankName',
                                     parent=self.body_style,
@@ -1154,14 +1224,14 @@ class EnhancedPDFReportGenerator:
                                     leading=11,
                                     wordWrap='LTR'
                                 )),
-                                self.format_number(row['total_branches']),
-                                self.format_percentage_table(row['market_share']),
-                                self.format_percentage_table(row['lmict_pct']),
-                                self.format_percentage_table(row['mmct_pct']),
-                                self.format_percentage_table(row['both_pct'])
+                                self.format_number(row['first_year_branches']),
+                                self.format_number(row['last_year_branches']),
+                                f"{'+' if row['absolute_change'] > 0 else ''}{row['absolute_change']}",
+                                f"{'+' if row['percentage_change'] > 0 else ''}{self.format_percentage_table(row['percentage_change'])}"
                             ])
-                        bank_table = Table(bank_table_data, colWidths=[2.5*inch, 1.1*inch, 1.1*inch, 0.9*inch, 0.9*inch, 1*inch])
-                        bank_table.setStyle(TableStyle([
+                        
+                        growth_table = Table(growth_data, colWidths=[2.5*inch, 1.1*inch, 1.1*inch, 1*inch, 1.8*inch])
+                        growth_table.setStyle(TableStyle([
                             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
                             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -1177,85 +1247,82 @@ class EnhancedPDFReportGenerator:
                             ('TOPPADDING', (0, 1), (-1, -1), 8),
                             ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                         ]))
-                        market_concentration_content.append(KeepTogether([market_share_header, bank_table, Spacer(1, 15)]))
-                        if not county_bank_analysis.empty:
-                            if county == 'combined':
-                                growth_header = Paragraph(f'<a name="growth_analysis_combined"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
-                                    f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
+                        
+                        market_concentration_content.append(KeepTogether([growth_header, growth_table, Spacer(1, 15)]))
+                    
+                    # Add Community Impact Analysis section
+                    if not county_bank_analysis.empty:
+                        # Get comparisons data - for combined counties, calculate averages from individual counties
+                        if county == 'combined' and county not in comparisons:
+                            # Calculate combined averages from individual county data
+                            all_lmi_pcts = []
+                            all_mmct_pcts = []
+                            for individual_county in self.counties:
+                                if individual_county in comparisons:
+                                    all_lmi_pcts.append(comparisons[individual_county]['county_avg_lmict'])
+                                    all_mmct_pcts.append(comparisons[individual_county]['county_avg_mmct'])
+                            
+                            if all_lmi_pcts and all_mmct_pcts:
+                                county_comparisons = {
+                                    'county_avg_lmict': sum(all_lmi_pcts) / len(all_lmi_pcts),
+                                    'county_avg_mmct': sum(all_mmct_pcts) / len(all_mmct_pcts)
+                                }
                             else:
-                                # Reuse the safe_county already created above
-                                growth_header = Paragraph(f'<a name="growth_analysis_{safe_county}"></a><b>Growth Analysis:</b> The following table shows how the branch counts for these top banks '
-                                    f"have evolved from {self.years[0]} to {self.years[-1]}, including absolute and percentage changes:", self.body_style)
-                            growth_data = []
-                            growth_data.append(['Bank', f'Branches\n({self.years[0]})', f'Branches\n({self.years[-1]})', f'Absolute\nChange', f'Percentage\nChange %'])
-                            for _, row in county_bank_analysis.iterrows():
-                                growth_data.append([
-                                    Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
-                                        'BankName',
-                                        parent=self.body_style,
-                                        alignment=TA_LEFT,
-                                        fontSize=9,
-                                        leading=11,
-                                        wordWrap='LTR'
-                                    )),
-                                    self.format_number(row['first_year_branches']),
-                                    self.format_number(row['last_year_branches']),
-                                    f"{'+' if row['absolute_change'] > 0 else ''}{row['absolute_change']}",
-                                    f"{'+' if row['percentage_change'] > 0 else ''}{self.format_percentage_table(row['percentage_change'])}"
-                                ])
-                            growth_table = Table(growth_data, colWidths=[2.5*inch, 1.1*inch, 1.1*inch, 1*inch, 1.8*inch])
-                            growth_table.setStyle(TableStyle([
-                                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
-                                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-                                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                                ('TOPPADDING', (0, 0), (-1, 0), 12),
-                                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f7fafc')),
-                                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-                                ('FONTSIZE', (0, 1), (-1, -1), 9),
-                                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                                ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
-                                ('TOPPADDING', (0, 1), (-1, -1), 8),
-                                ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
-                            ]))
-                            market_concentration_content.append(KeepTogether([growth_header, growth_table, Spacer(1, 15)]))
-                        if county in bank_analysis and not bank_analysis[county].empty:
-                            if ai_analysis['community_impact']:
-                                market_concentration_content.extend(self.format_ai_content(ai_analysis['community_impact']))
-                                market_concentration_content.append(Spacer(1, 15))
+                                county_comparisons = {'county_avg_lmict': 0, 'county_avg_mmct': 0}
+                        elif county in comparisons:
+                            county_comparisons = comparisons[county]
+                        else:
+                            county_comparisons = {'county_avg_lmict': 0, 'county_avg_mmct': 0}
+                        
+                        if county_comparisons:
                             if county == 'combined':
-                                community_impact_header = Paragraph(f'<a name="community_impact_table_combined"></a>Community Impact Comparison Data:', self.subsection_style)
+                                community_impact_header = Paragraph(f'<a name="community_impact_combined"></a>Community Impact Analysis', self.subsection_style)
                             else:
-                                # Reuse the safe_county already created above
-                                community_impact_header = Paragraph(f'<a name="community_impact_table_{safe_county}"></a>Community Impact Comparison Data:', self.subsection_style)
+                                community_impact_header = Paragraph(f'<a name="community_impact_{safe_county}"></a>Community Impact Analysis', self.subsection_style)
+                            
+                            # Add narrative explanation
+                            community_narrative = (
+                                f"This analysis examines how effectively the major banks in {', '.join(self.counties) if county == 'combined' else county} "
+                                f"serve low-to-moderate income and majority-minority communities. The table below compares each bank's "
+                                f"LMI and MMCT percentages against the area average, providing insights into which institutions "
+                                f"are most committed to serving underserved communities. "
+                                f"Banks with higher percentages than the average are marked with ▲, while those below average are marked with ▼."
+                            )
+                            
+                            market_concentration_content.append(KeepTogether([community_impact_header, Spacer(1, 10), Paragraph(community_narrative, self.body_style), Spacer(1, 15)]))
+                            
+                            # Create community impact comparison table
+                            if county == 'combined':
+                                comparison_header = Paragraph(f'<a name="community_impact_table_combined"></a>Community Impact Comparison Data:', self.subsection_style)
+                            else:
+                                comparison_header = Paragraph(f'<a name="community_impact_table_{safe_county}"></a>Community Impact Comparison Data:', self.subsection_style)
+                            
                             comparison_data = []
-                            comparison_data.append(['Bank', 'LMI %', 'MMCT %', 'Both %', 'LMI vs\nAvg', 'MMCT vs\nAvg'])
-                            for _, row in bank_analysis[county].iterrows():
+                            comparison_data.append(['Bank', 'LMI %', 'MMCT %', 'LMI vs\nAvg', 'MMCT vs\nAvg'])
+                            
+                            for _, row in county_bank_analysis.iterrows():
                                 bank_current = county_market_shares[county_market_shares['bank_name'] == row['bank_name']]
                                 if not bank_current.empty:
                                     bank_lmi = bank_current.iloc[0]['lmict_pct']
                                     bank_mmct = bank_current.iloc[0]['mmct_pct']
-                                    bank_both = min(bank_lmi, bank_mmct) if bank_lmi > 0 and bank_mmct > 0 else 0
                                     lmi_vs_avg = "▲" if bank_lmi > county_comparisons['county_avg_lmict'] else "▼" if bank_lmi < county_comparisons['county_avg_lmict'] else "●"
                                     mmct_vs_avg = "▲" if bank_mmct > county_comparisons['county_avg_mmct'] else "▼" if bank_mmct < county_comparisons['county_avg_mmct'] else "●"
                                     comparison_data.append([
                                         Paragraph(self.to_all_caps(row['bank_name']), ParagraphStyle(
                                             'BankName',
                                             parent=self.body_style,
-                                            alignment=TA_LEFT,
+                                            alignment=TA_CENTER,
                                             fontSize=9,
                                             leading=11,
                                             wordWrap='LTR'
                                         )),
                                         self.format_percentage_table(bank_lmi),
                                         self.format_percentage_table(bank_mmct),
-                                        self.format_percentage_table(bank_both),
                                         lmi_vs_avg,
                                         mmct_vs_avg
                                     ])
-                            comparison_table = Table(comparison_data, colWidths=[2.5*inch, 0.9*inch, 0.9*inch, 0.9*inch, 1.1*inch, 1.2*inch])
+                            
+                            comparison_table = Table(comparison_data, colWidths=[2.5*inch, 0.9*inch, 0.9*inch, 1.1*inch, 1.2*inch])
                             comparison_table.setStyle(TableStyle([
                                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#2d3748')),
                                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
@@ -1272,13 +1339,46 @@ class EnhancedPDFReportGenerator:
                                 ('TOPPADDING', (0, 1), (-1, -1), 8),
                                 ('VALIGN', (0, 1), (0, -1), 'MIDDLE'),
                             ]))
-                            market_concentration_content.append(KeepTogether([community_impact_header, comparison_table, Spacer(1, 15)]))
-            
-            # Add all market concentration content to the story at once to prevent page breaks
-            complete_story.append(KeepTogether(market_concentration_content))
+                            
+                            market_concentration_content.append(KeepTogether([comparison_header, comparison_table, Spacer(1, 15)]))
+                            
+                            # Add explanatory paragraphs after the table - dynamically generated based on actual data
+                            # Count banks above/below average for dynamic insights
+                            banks_above_lmi_avg = sum(1 for _, row in county_bank_analysis.iterrows() 
+                                                    if county_market_shares[county_market_shares['bank_name'] == row['bank_name']].iloc[0]['lmict_pct'] > county_comparisons['county_avg_lmict'])
+                            banks_above_mmct_avg = sum(1 for _, row in county_bank_analysis.iterrows() 
+                                                     if county_market_shares[county_market_shares['bank_name'] == row['bank_name']].iloc[0]['mmct_pct'] > county_comparisons['county_avg_mmct'])
+                            
+                            # Get top performers for dynamic description
+                            top_lmi_bank = county_market_shares.loc[county_market_shares['lmict_pct'].idxmax(), 'bank_name'] if not county_market_shares.empty else "N/A"
+                            top_mmct_bank = county_market_shares.loc[county_market_shares['mmct_pct'].idxmax(), 'bank_name'] if not county_market_shares.empty else "N/A"
+                            
+                            explanation_para1 = (
+                                f"Analysis of the Community Impact Comparison Data reveals that {banks_above_lmi_avg} out of {len(county_bank_analysis)} major banks "
+                                f"in {', '.join(self.counties) if county == 'combined' else county} exceed the area average for LMI tract coverage, "
+                                f"while {banks_above_mmct_avg} banks exceed the MMCT tract average. "
+                                f"{top_lmi_bank} leads in LMI community service, while {top_mmct_bank} demonstrates the strongest "
+                                f"commitment to majority-minority communities."
+                            )
+                            
+                            explanation_para2 = (
+                                f"The data shows varying levels of community service commitment across institutions. "
+                                f"Banks marked with ▲ exceed area averages and demonstrate stronger financial inclusion practices, "
+                                f"while those marked with ▼ may have opportunities to expand community outreach. "
+                                f"This analysis helps identify which banks are leading community development efforts "
+                                f"and where additional investment in underserved areas could be beneficial."
+                            )
+                            
+                            market_concentration_content.append(Paragraph(explanation_para1, self.body_style))
+                            market_concentration_content.append(Spacer(1, 10))
+                            market_concentration_content.append(Paragraph(explanation_para2, self.body_style))
+                            market_concentration_content.append(Spacer(1, 15))
+                
+                # Add all market concentration content to the story
+                complete_story.append(KeepTogether(market_concentration_content))
+                complete_story.append(Spacer(1, 20))
         
 
-        
         # Methodology and Technical Notes Section
         complete_story.append(PageBreak())
         self.page_breaks_count += 1
@@ -1296,8 +1396,8 @@ class EnhancedPDFReportGenerator:
             Spacer(1, 15),
             Paragraph(
                 f"This analysis examines bank branch trends and market concentration using FDIC Summary of Deposits data. "
-                f"The analysis focuses on four key metrics: total branch counts, total deposits, the percentage of branches in Low-to-Moderate Income (LMI) tracts, "
-                f"and the percentage of branches in Majority-Minority Census Tracts (MMCT). We identify the largest banks by deposit market share "
+                f"The analysis focuses on three key metrics: total branch counts, total deposits, and the percentage of branches in Low-to-Moderate Income (LMI) tracts "
+                f"and Majority-Minority Census Tracts (MMCT). We identify the largest banks by deposit market share "
                 f"and analyze their growth patterns and community impact compared to county averages. Market concentration is measured using the Herfindahl-Hirschman Index (HHI) based on deposit market shares. All analysis is enhanced with "
                 f"AI-powered insights using {self.ai_analyzer.provider.upper()} for deeper interpretation of trends and strategic implications.",
                 self.body_style
@@ -1307,8 +1407,20 @@ class EnhancedPDFReportGenerator:
                 "<b>Data Definitions:</b><br/>"
                 "• <b>LMICT:</b> Low-to-Moderate Income Census Tracts - areas with median family income below 80% of the area median income<br/>"
                 "• <b>MMCT:</b> Majority-Minority Census Tracts - areas where minority populations represent more than 50% of the total population<br/>"
-                "• <b>LMI/MMCT:</b> Branches that serve both low-to-moderate income and majority-minority communities<br/>"
                 "• <b>Market Share:</b> Percentage of total deposits in the county controlled by each bank (regulatory standard for HHI calculation)",
+                self.body_style
+            ),
+            Spacer(1, 15),
+            Paragraph(
+                f"<b>Analysis Overview:</b> This analysis examines bank branch trends in {', '.join(self.counties)} from {years_str} using FDIC Summary of Deposits data. "
+                f"We focus on three key metrics: total branch counts, the percentage of branches in Low-to-Moderate Income (LMI) tracts, "
+                f"and the percentage of branches in Majority-Minority Census Tracts (MMCT).",
+                self.body_style
+            ),
+            Spacer(1, 15),
+            Paragraph(
+                f"<b>Important Note:</b> MMCT designations increased significantly with the 2020 census and became effective in 2022. "
+                f"This means MMCT percentages may show notable changes between 2021 and 2022, reflecting the updated census data rather than actual branch relocations.",
                 self.body_style
             )
         ]
