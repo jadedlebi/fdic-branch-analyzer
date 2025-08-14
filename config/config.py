@@ -22,7 +22,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # AI Configuration
 AI_PROVIDER = "claude"  # Options: "gpt-4", "claude"
-CLAUDE_MODEL = "claude-3-5-sonnet-20241022"
+CLAUDE_MODEL = "claude-sonnet-4-20250514"
 GPT_MODEL = "gpt-4"
 
 # BigQuery Configuration

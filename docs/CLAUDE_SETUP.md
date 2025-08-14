@@ -13,7 +13,7 @@ The system is already configured to use Claude by default. In `config.py`, you c
 AI_PROVIDER = "claude"  # Change this to "openai" if you want to use GPT-4
 
 # Claude Configuration
-CLAUDE_MODEL = "claude-3-5-sonnet-20241022"  # Latest Claude model
+CLAUDE_MODEL = "claude-sonnet-4-20250514"  # Latest Claude model
 ```
 
 ### 2. Set Up Claude API Key
@@ -77,10 +77,10 @@ Make sure you have the appropriate API key set:
 
 ## 📊 Available Claude Models
 
-The system is configured to use `claude-3-5-sonnet-20241022`, which is the latest and most capable Claude model. You can change this in `config.py`:
+The system is configured to use `claude-sonnet-4-20250514`, which is the latest and most capable Claude model. You can change this in `config.py`:
 
 ```python
-CLAUDE_MODEL = "claude-3-5-sonnet-20241022"  # Latest model
+CLAUDE_MODEL = "claude-sonnet-4-20250514"  # Latest model
 # Other options:
 # CLAUDE_MODEL = "claude-3-opus-20240229"    # Most capable
 # CLAUDE_MODEL = "claude-3-sonnet-20240229"  # Balanced

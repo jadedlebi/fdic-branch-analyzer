@@ -25,6 +25,7 @@ from config import DATA_DIR
 # Cost estimates (in USD per 1K tokens)
 COST_ESTIMATES = {
     "claude": {
+        "claude-sonnet-4-20250514": {"input": 0.003, "output": 0.015},
         "claude-3-5-sonnet-20241022": {"input": 0.003, "output": 0.015},
         "claude-3-opus-20240229": {"input": 0.015, "output": 0.075},
         "claude-3-sonnet-20240229": {"input": 0.003, "output": 0.015},
